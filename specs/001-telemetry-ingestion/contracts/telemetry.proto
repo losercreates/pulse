@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package pulse.telemetry.v1;
+
+option go_package = "github.com/losercreates/pulse/proto/v1;telemetryv1";
+
+// TelemetryReading represents an individual sensor measurement.
+message TelemetryReading {
+  string device_id = 1;
+  int64 timestamp_ns = 2;
+  string metric_name = 3;
+  double value = 4;
+  string unit = 5;
+  map<string, string> metadata = 6;
+}
+
+// TelemetryBatch represents a batch of readings transmitted together.
+message TelemetryBatch {
+  repeated TelemetryReading readings = 1;
+}
+
+// ValidationError details specific validation failures on a field.
+message ValidationError {
+  string field = 1;
+  string error_code = 2;
+  string message = 3;
+}
+
+// IngestionReceipt acknowledges ingestion processing.
+message IngestionReceipt {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_ACCEPTED = 1;
+    STATUS_PARTIAL_SUCCESS = 2;
+    STATUS_REJECTED = 3;
+  }
+
+  Status status = 1;
+  int32 processed_count = 2;
+  int32 rejected_count = 3;
+  int64 server_time_ns = 4;
+  repeated ValidationError error_details = 5;
+}
+
+// IngestionService exposes streaming and unary telemetry ingestion.
+service IngestionService {
+  // Ingest a single telemetry reading unary.
+  rpc IngestReading(TelemetryReading) returns (IngestionReceipt);
+
+  // Ingest a batch of telemetry readings.
+  rpc IngestBatch(TelemetryBatch) returns (IngestionReceipt);
+
+  // Client-streaming ingestion for persistent sensor connections.
+  rpc IngestStream(stream TelemetryReading) returns (IngestionReceipt);
+}
