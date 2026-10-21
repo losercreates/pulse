@@ -36,10 +36,10 @@ jobs:
       - name: Verify Protobuf Drift
         run: |
           make proto
-          if ! git diff --quiet proto/; then
+          if ! git diff -I '^//.*protoc' --quiet proto/; then
             echo "Error: Generated protobuf code in proto/ is out of date with telemetry.proto!"
             echo "Run 'make proto' locally and commit the generated changes."
-            git diff proto/
+            git diff -I '^//.*protoc' proto/
             exit 1
           fi
 
