@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package pulse.stream.v1;
+
+option go_package = "github.com/losercreates/pulse/proto/v1;telemetryv1";
+
+import "telemetry.proto";
+
+// WindowAggregate represents the computed rollup of a closed window.
+message WindowAggregate {
+  string device_id = 1;
+  string metric_name = 2;
+  int64 window_start_ns = 3;
+  int64 window_end_ns = 4;
+  uint64 count = 5;
+  double sum = 6;
+  double min = 7;
+  double max = 8;
+  double mean = 9;
+  uint64 approx_distinct_count = 10;
+  int64 emitted_at_ns = 11;
+  int32 partition_id = 12;
+}
+
+// LateTelemetryRecord represents an event rejected because its window has closed.
+message LateTelemetryRecord {
+  pulse.telemetry.v1.TelemetryReading reading = 1;
+  int32 partition_id = 2;
+  int64 watermark_ns = 3;
+  int64 lateness_ns = 4;
+}
