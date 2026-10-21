@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+
+      - name: Install Protoc Compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "28.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Protoc Go Plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Verify Protobuf Drift
+        run: |
+          make proto
+          if ! git diff --quiet proto/; then
+            echo "Error: Generated protobuf code in proto/ is out of date with telemetry.proto!"
+            echo "Run 'make proto' locally and commit the generated changes."
+            git diff proto/
+            exit 1
+          fi
+
+      - name: Static Analysis (go vet)
+        run: go vet ./...
+
+      - name: Run Tests with Race Detector & Coverage
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Run Ingestion Benchmark
+        run: go test -v -bench=. -benchtime=1s -benchmem ./tests/bench/...
+
+      - name: Build Ingestion Gateway Binary
+        run: make build
+
+  e2e-redpanda:
+    name: Redpanda Ingestion E2E Test
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+
+      - name: Install Protoc Compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "28.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Protoc Go Plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Start Redpanda Cluster
+        run: |
+          docker compose -f deployments/docker-compose.yml up -d redpanda redpanda-init
+          
+          # Wait up to 30s for Redpanda to become healthy
+          for i in $(seq 1 30); do
+            if docker compose -f deployments/docker-compose.yml exec -T redpanda rpk cluster health | grep -i healthy; then
+              echo "Redpanda cluster is healthy!"
+              break
+            fi
+            echo "Waiting for Redpanda to initialize..."
+            sleep 1
+          done
+          
+          # Verify telemetry.raw topic exists with 12 partitions
+          docker compose -f deployments/docker-compose.yml exec -T redpanda rpk topic list
+
+      - name: Build and Run Gateway
+        run: |
+          make build
+          ./bin/gateway &
+          GATEWAY_PID=$!
+          echo "GATEWAY_PID=$GATEWAY_PID" >> $GITHUB_ENV
+          
+          # Wait up to 15s for Gateway /healthz to report UP and broker_connected
+          for i in $(seq 1 15); do
+            HEALTH_RESP=$(curl -s http://localhost:8080/healthz || true)
+            if echo "$HEALTH_RESP" | grep -q '"broker_connected":true'; then
+              echo "Gateway is healthy and connected to Redpanda broker!"
+              break
+            fi
+            echo "Waiting for Gateway health probe: $HEALTH_RESP"
+            sleep 1
+          done
+
+      - name: Verify Live Telemetry Ingestion
+        run: |
+          TIMESTAMP=$(date +%s%N)
+          HTTP_STATUS=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X POST http://localhost:8080/api/v1/telemetry \
+            -H "Content-Type: application/json" \
+            -d '{
+              "device_id": "turbine-ci-sensor",
+              "timestamp_ns": '$TIMESTAMP',
+              "metric_name": "bearing_temp",
+              "value": 78.4,
+              "unit": "celsius"
+            }')
+          
+          cat /tmp/resp.json
+          if [ "$HTTP_STATUS" != "202" ]; then
+            echo "Failed ingestion! Expected HTTP 202, got $HTTP_STATUS"
+            exit 1
+          fi
+
+      - name: Verify Record in Redpanda Topic
+        run: |
+          # Consume 1 record from telemetry.raw and verify key matches
+          docker compose -f deployments/docker-compose.yml exec -T redpanda \
+            rpk topic consume telemetry.raw -n 1 --format '%k | %p\n' | grep "turbine-ci-sensor"
+
+      - name: Stop Gateway and Redpanda
+        if: always()
+        run: |
+          if [ -n "$GATEWAY_PID" ]; then
+            kill $GATEWAY_PID 2>/dev/null || true
+          fi
+          docker compose -f deployments/docker-compose.yml down -v

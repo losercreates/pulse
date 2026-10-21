@@ -1,0 +1,11 @@
+.git
+.agents
+.specify
+specs/
+bin/
+dist/
+*.test
+*.out
+.env
+.env.*
+!.env.example

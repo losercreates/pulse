@@ -10,9 +10,9 @@
 
 **Purpose**: Project initialization, dependency management, and local container orchestration.
 
-- [ ] T001 Initialize Go module `github.com/losercreates/pulse` and install dependencies (`github.com/twmb/franz-go`, `google.golang.org/grpc`, `google.golang.org/protobuf`, `github.com/prometheus/client_golang`, `github.com/stretchr/testify`) in `go.mod`
-- [ ] T002 [P] Create Docker Compose file with single-node Redpanda broker and `telemetry.raw` (12 partitions) topic provisioning in `deployments/docker-compose.yml`
-- [ ] T003 [P] Create Makefile with `build`, `proto`, `up`, `down`, `test`, and `bench` targets in `Makefile`
+- [X] T001 Initialize Go module `github.com/losercreates/pulse` and install dependencies (`github.com/twmb/franz-go`, `google.golang.org/grpc`, `google.golang.org/protobuf`, `github.com/prometheus/client_golang`, `github.com/stretchr/testify`) in `go.mod`
+- [X] T002 [P] Create Docker Compose file with single-node Redpanda broker and `telemetry.raw` (12 partitions) topic provisioning in `deployments/docker-compose.yml`
+- [X] T003 [P] Create Makefile with `build`, `proto`, `up`, `down`, `test`, and `bench` targets in `Makefile`
 
 ---
 
@@ -22,10 +22,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Compile Protobuf v3 contract from `specs/001-telemetry-ingestion/contracts/telemetry.proto` generating Go stubs in `proto/v1/telemetry.pb.go` and `proto/v1/telemetry_grpc.pb.go`
-- [ ] T005 [P] Implement application configuration loader with environment variables (`REDPANDA_BROKERS`, `HTTP_PORT`, `GRPC_PORT`, `TOPIC_RAW`) in `internal/gateway/config/config.go`
-- [ ] T006 [P] Implement Prometheus metrics registry with record counters, byte counters, and latency histograms in `internal/gateway/metrics/metrics.go`
-- [ ] T007 Implement Franz-go Kafka producer wrapper with Murmur2 hash partitioner on `device_id` in `internal/gateway/producer/producer.go`
+- [X] T004 Compile Protobuf v3 contract from `specs/001-telemetry-ingestion/contracts/telemetry.proto` generating Go stubs in `proto/v1/telemetry.pb.go` and `proto/v1/telemetry_grpc.pb.go`
+- [X] T005 [P] Implement application configuration loader with environment variables (`REDPANDA_BROKERS`, `HTTP_PORT`, `GRPC_PORT`, `TOPIC_RAW`) in `internal/gateway/config/config.go`
+- [X] T006 [P] Implement Prometheus metrics registry with record counters, byte counters, and latency histograms in `internal/gateway/metrics/metrics.go`
+- [X] T007 Implement Franz-go Kafka producer wrapper with Murmur2 hash partitioner on `device_id` in `internal/gateway/producer/producer.go`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin.
 
@@ -39,14 +39,14 @@
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Create unit tests for IngestionService business logic mocking producer dispatch in `internal/gateway/service/ingestion_test.go`
+- [X] T008 [P] [US1] Create unit tests for IngestionService business logic mocking producer dispatch in `internal/gateway/service/ingestion_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Implement IngestionService coordinating validation and producer dispatch in `internal/gateway/service/ingestion.go`
-- [ ] T010 [P] [US1] Implement HTTP server endpoints `POST /api/v1/telemetry` and `POST /api/v1/telemetry/batch` in `internal/gateway/server/http.go`
-- [ ] T011 [P] [US1] Implement gRPC server `IngestionServiceServer` supporting `IngestReading`, `IngestBatch`, and `IngestStream` in `internal/gateway/server/grpc.go`
-- [ ] T012 [US1] Implement main entrypoint bootstrapping concurrent HTTP (:8080) and gRPC (:50051) servers with graceful shutdown in `cmd/gateway/main.go`
+- [X] T009 [US1] Implement IngestionService coordinating validation and producer dispatch in `internal/gateway/service/ingestion.go`
+- [X] T010 [P] [US1] Implement HTTP server endpoints `POST /api/v1/telemetry` and `POST /api/v1/telemetry/batch` in `internal/gateway/server/http.go`
+- [X] T011 [P] [US1] Implement gRPC server `IngestionServiceServer` supporting `IngestReading`, `IngestBatch`, and `IngestStream` in `internal/gateway/server/grpc.go`
+- [X] T012 [US1] Implement main entrypoint bootstrapping concurrent HTTP (:8080) and gRPC (:50051) servers with graceful shutdown in `cmd/gateway/main.go`
 
 **Checkpoint**: At this point, User Story 1 is fully functional and delivers the core ingestion MVP.
 
@@ -60,8 +60,8 @@
 
 ### Implementation for User Story 2
 
-- [ ] T013 [P] [US2] Implement deterministic key partitioner test verifying `device_id` hash distribution in `internal/gateway/producer/producer_test.go`
-- [ ] T014 [US2] Write end-to-end integration test verifying per-device partition consistency against Redpanda in `tests/integration/partitioning_test.go`
+- [X] T013 [P] [US2] Implement deterministic key partitioner test verifying `device_id` hash distribution in `internal/gateway/producer/producer_test.go`
+- [X] T014 [US2] Write end-to-end integration test verifying per-device partition consistency against Redpanda in `tests/integration/partitioning_test.go`
 
 **Checkpoint**: User Stories 1 and 2 deliver high-throughput, partition-ordered ingestion matching Constitution Principle I.
 
@@ -75,8 +75,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T015 [P] [US3] Implement health check handler testing live Redpanda broker metadata connection at `GET /healthz` in `internal/gateway/server/health.go`
-- [ ] T016 [P] [US3] Implement HTTP and gRPC metrics instrumentation middleware recording request latency and payload size in `internal/gateway/server/middleware.go`
+- [X] T015 [P] [US3] Implement health check handler testing live Redpanda broker metadata connection at `GET /healthz` in `internal/gateway/server/health.go`
+- [X] T016 [P] [US3] Implement HTTP and gRPC metrics instrumentation middleware recording request latency and payload size in `internal/gateway/server/middleware.go`
 
 **Checkpoint**: Operational probes and Prometheus monitoring are operational.
 
@@ -90,12 +90,12 @@
 
 ### Tests for User Story 4
 
-- [ ] T017 [P] [US4] Write unit tests covering clock skew bounds, string lengths, and non-finite numbers in `internal/gateway/validator/validator_test.go`
+- [X] T017 [P] [US4] Write unit tests covering clock skew bounds, string lengths, and non-finite numbers in `internal/gateway/validator/validator_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T018 [US4] Implement payload validator checking `1 <= len(device_id) <= 128`, `1 <= len(metric_name) <= 128`, `now - 24h <= timestamp_ns <= now + 5m`, and `!math.IsNaN(value) && !math.IsInf(value, 0)` in `internal/gateway/validator/validator.go`
-- [ ] T019 [US4] Integrate validator into `IngestionService` returning detailed `ValidationError` responses in `internal/gateway/service/ingestion.go`
+- [X] T018 [US4] Implement payload validator checking `1 <= len(device_id) <= 128`, `1 <= len(metric_name) <= 128`, `now - 24h <= timestamp_ns <= now + 5m`, and `!math.IsNaN(value) && !math.IsInf(value, 0)` in `internal/gateway/validator/validator.go`
+- [X] T019 [US4] Integrate validator into `IngestionService` returning detailed `ValidationError` responses in `internal/gateway/service/ingestion.go`
 
 **Checkpoint**: Downstream pipeline is defended against corrupted edge device clocks and bad payloads.
 
@@ -105,9 +105,9 @@
 
 **Purpose**: Performance benchmarking, integration test suite, and operational verification.
 
-- [ ] T020 [P] Implement concurrent ingestion load benchmark targeting $\ge 50,000\text{ events/sec}$ in `tests/bench/throughput_test.go`
-- [ ] T021 [P] Implement end-to-end integration test suite validating scenarios from `quickstart.md` in `tests/integration/gateway_test.go`
-- [ ] T022 [P] Document local run and benchmark instructions in `README.md`
+- [X] T020 [P] Implement concurrent ingestion load benchmark targeting $\ge 50,000\text{ events/sec}$ in `tests/bench/throughput_test.go`
+- [X] T021 [P] Implement end-to-end integration test suite validating scenarios from `quickstart.md` in `tests/integration/gateway_test.go`
+- [X] T022 [P] Document local run and benchmark instructions in `README.md`
 
 ---
 
