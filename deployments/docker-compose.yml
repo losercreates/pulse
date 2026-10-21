@@ -32,8 +32,10 @@ services:
         condition: service_healthy
     entrypoint: [ "/bin/sh", "-c" ]
     command: >
-      "echo 'Creating telemetry.raw topic with 12 partitions...' &&
+      "echo 'Creating telemetry topics with 12 partitions...' &&
        rpk topic create telemetry.raw -p 12 -r 1 --brokers redpanda:29092 || true &&
+       rpk topic create telemetry.aggregates -p 12 -r 1 --brokers redpanda:29092 || true &&
+       rpk topic create telemetry.late -p 12 -r 1 --brokers redpanda:29092 || true &&
        echo 'Topic provisioning complete:' &&
        rpk topic list --brokers redpanda:29092"
     restart: "no"

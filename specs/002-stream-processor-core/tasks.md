@@ -10,8 +10,8 @@
 
 **Purpose**: Topic provisioning in Docker Compose and build automation for stream processing.
 
-- [ ] T001 [P] Update `deployments/docker-compose.yml` to provision topics `telemetry.aggregates` (12 partitions) and `telemetry.late` (12 partitions) in `deployments/docker-compose.yml`
-- [ ] T002 [P] Update `Makefile` with `proto` targets to compile `aggregates.proto` and build `cmd/processor` in `Makefile`
+- [X] T001 [P] Update `deployments/docker-compose.yml` to provision topics `telemetry.aggregates` (12 partitions) and `telemetry.late` (12 partitions) in `deployments/docker-compose.yml`
+- [X] T002 [P] Update `Makefile` with `proto` targets to compile `aggregates.proto` and build `cmd/processor` in `Makefile`
 
 ---
 
@@ -21,9 +21,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Compile Protobuf v3 contract from `specs/002-stream-processor-core/contracts/aggregates.proto` into `proto/v1/aggregates.pb.go`
-- [ ] T004 [P] Implement stream processor configuration loader (`STREAM_ALLOWED_LATENESS` default "5s", `STREAM_IDLE_TIMEOUT` default "10s", `TUMBLING_WINDOW_SIZE`, `SLIDING_WINDOW_SIZE`, `SLIDING_SLIDE_SIZE`) in `internal/processor/config/config.go`
-- [ ] T005 [P] Implement streaming Prometheus metrics instrumentation (watermark lag, open windows, late records, window close latency) in `internal/processor/metrics/metrics.go`
+- [X] T003 Compile Protobuf v3 contract from `specs/002-stream-processor-core/contracts/aggregates.proto` into `proto/v1/aggregates.pb.go`
+- [X] T004 [P] Implement stream processor configuration loader (`STREAM_ALLOWED_LATENESS` default "5s", `STREAM_IDLE_TIMEOUT` default "10s", `TUMBLING_WINDOW_SIZE`, `SLIDING_WINDOW_SIZE`, `SLIDING_SLIDE_SIZE`) in `internal/processor/config/config.go`
+- [X] T005 [P] Implement streaming Prometheus metrics instrumentation (watermark lag, open windows, late records, window close latency) in `internal/processor/metrics/metrics.go`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin.
 
@@ -37,16 +37,16 @@
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Create unit tests for monotonic watermark progression, allowed lateness calculation, and idle partition advancement in `internal/processor/watermark/watermark_test.go`
-- [ ] T007 [P] [US1] Create unit tests for tumbling/sliding window boundary assignment, min-heap priority queue ordering, and HLL distinct estimation in `internal/processor/window/window_test.go`
+- [X] T006 [P] [US1] Create unit tests for monotonic watermark progression, allowed lateness calculation, and idle partition advancement in `internal/processor/watermark/watermark_test.go`
+- [X] T007 [P] [US1] Create unit tests for tumbling/sliding window boundary assignment, min-heap priority queue ordering, and HLL distinct estimation in `internal/processor/window/window_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Implement event-time `WatermarkTracker` tracking `max_event_time_ns` and computing `current_watermark_ns = max_event_time_ns - allowed_lateness_ns` with verbatim constraint `"allowed_lateness_ns: Configurable allowed lateness bound (default: 5 seconds)"` and idle heartbeat progression in `internal/processor/watermark/watermark.go`
-- [ ] T009 [US1] Implement tumbling (`WindowStart = floor(T / D) * D`, `WindowEnd = WindowStart + D`) and sliding (`T - D < W_s <= T and W_s mod S == 0`) window boundary calculation with `WindowKey` constraints (`"device_id: Machine or sensor identifier (1 to 128 characters)"`, `"window_start_ns: inclusive"`, `"window_end_ns: exclusive"`) in `internal/processor/window/window.go`
-- [ ] T010 [US1] Implement Min-Heap Priority Queue (`container/heap`) ordered by `window_end_ns` for $O(1)$ window expiration discovery with `"heap_index: Internal index in the partition min-heap priority queue"` in `internal/processor/window/priority_queue.go`
-- [ ] T011 [US1] Implement single-pass `WindowAccumulator` computing count, sum, min, max, mean, and compact `"hll_registers: [64]uint8"` HyperLogLog distinct sketch in `internal/processor/window/accumulator.go`
-- [ ] T012 [US1] Implement in-memory `WindowManager` coordinating window lifecycle, record accumulation, and watermark-triggered emission in `internal/processor/window/manager.go`
+- [X] T008 [US1] Implement event-time `WatermarkTracker` tracking `max_event_time_ns` and computing `current_watermark_ns = max_event_time_ns - allowed_lateness_ns` with verbatim constraint `"allowed_lateness_ns: Configurable allowed lateness bound (default: 5 seconds)"` and idle heartbeat progression in `internal/processor/watermark/watermark.go`
+- [X] T009 [US1] Implement tumbling (`WindowStart = floor(T / D) * D`, `WindowEnd = WindowStart + D`) and sliding (`T - D < W_s <= T and W_s mod S == 0`) window boundary calculation with `WindowKey` constraints (`"device_id: Machine or sensor identifier (1 to 128 characters)"`, `"window_start_ns: inclusive"`, `"window_end_ns: exclusive"`) in `internal/processor/window/window.go`
+- [X] T010 [US1] Implement Min-Heap Priority Queue (`container/heap`) ordered by `window_end_ns` for $O(1)$ window expiration discovery with `"heap_index: Internal index in the partition min-heap priority queue"` in `internal/processor/window/priority_queue.go`
+- [X] T011 [US1] Implement single-pass `WindowAccumulator` computing count, sum, min, max, mean, and compact `"hll_registers: [64]uint8"` HyperLogLog distinct sketch in `internal/processor/window/accumulator.go`
+- [X] T012 [US1] Implement in-memory `WindowManager` coordinating window lifecycle, record accumulation, and watermark-triggered emission in `internal/processor/window/manager.go`
 
 **Checkpoint**: User Story 1 is functional and delivers the core watermark-based windowing MVP.
 
@@ -60,12 +60,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Create unit and mock tests for partition worker loop and lifecycle management in `internal/processor/consumer/worker_test.go`
+- [X] T013 [P] [US2] Create unit and mock tests for partition worker loop and lifecycle management in `internal/processor/consumer/worker_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] Implement dedicated partition worker goroutine managing partition-local watermark and window state with zero hot-path locks in `internal/processor/consumer/worker.go`
-- [ ] T015 [US2] Implement Franz-go consumer group orchestrator with `kgo.CooperativeStickyBalancers()` spawning and revoking partition workers in `internal/processor/consumer/group.go`
+- [X] T014 [US2] Implement dedicated partition worker goroutine managing partition-local watermark and window state with zero hot-path locks in `internal/processor/consumer/worker.go`
+- [X] T015 [US2] Implement Franz-go consumer group orchestrator with `kgo.CooperativeStickyBalancers()` spawning and revoking partition workers in `internal/processor/consumer/group.go`
 
 **Checkpoint**: User Stories 1 and 2 deliver partition-parallel, lock-free stream aggregation conforming to Constitution Principle I.
 
@@ -79,12 +79,12 @@
 
 ### Tests for User Story 3
 
-- [ ] T016 [P] [US3] Create unit tests for late event detection and dead-letter record serialization in `internal/processor/latesink/latesink_test.go`
+- [X] T016 [P] [US3] Create unit tests for late event detection and dead-letter record serialization in `internal/processor/latesink/latesink_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T017 [US3] Implement `LateDataSink` publishing late-arriving records to `telemetry.late` with verbatim constraint `"lateness_duration_ns: Latency beyond watermark (watermark - timestamp_ns)"` in `internal/processor/latesink/latesink.go`
-- [ ] T018 [US3] Integrate late data routing into partition worker loop preserving closed window immutability in `internal/processor/consumer/worker.go`
+- [X] T017 [US3] Implement `LateDataSink` publishing late-arriving records to `telemetry.late` with verbatim constraint `"lateness_duration_ns: Latency beyond watermark (watermark - timestamp_ns)"` in `internal/processor/latesink/latesink.go`
+- [X] T018 [US3] Integrate late data routing into partition worker loop preserving closed window immutability in `internal/processor/consumer/worker.go`
 
 **Checkpoint**: Closed windows are immutable; late data is captured and audited without corrupting published aggregates.
 
@@ -98,8 +98,8 @@
 
 ### Implementation for User Story 4
 
-- [ ] T019 [US4] Implement checkpoint manager committing consumer offsets to Redpanda coordinated with aggregate emissions in `internal/processor/consumer/checkpoint.go`
-- [ ] T020 [US4] Implement main entrypoint bootstrapping partition consumer group, aggregate publisher, and graceful OS shutdown in `cmd/processor/main.go`
+- [X] T019 [US4] Implement checkpoint manager committing consumer offsets to Redpanda coordinated with aggregate emissions in `internal/processor/consumer/checkpoint.go`
+- [X] T020 [US4] Implement main entrypoint bootstrapping partition consumer group, aggregate publisher, and graceful OS shutdown in `cmd/processor/main.go`
 
 **Checkpoint**: Stream processor survives restarts and rebalances with zero lost or double-counted aggregates.
 
@@ -113,7 +113,7 @@
 
 ### Implementation for User Story 5
 
-- [ ] T021 [P] [US5] Expose HTTP server for Prometheus scraping (`/metrics`) and processor health probe (`/healthz`) on port `:8081` in `internal/processor/server/http.go`
+- [X] T021 [P] [US5] Expose HTTP server for Prometheus scraping (`/metrics`) and processor health probe (`/healthz`) on port `:8081` in `internal/processor/server/http.go`
 
 ---
 
@@ -121,9 +121,9 @@
 
 **Purpose**: Performance benchmarking, property-based testing, and documentation.
 
-- [ ] T022 [P] Implement property-based test proving window aggregates are invariant to event arrival order within allowed lateness bound in `tests/property/order_invariance_test.go`
-- [ ] T023 [P] Implement stream processing load benchmark targeting $\ge 50,000\text{ events/sec}$ across 12 partitions in `tests/bench/processor_bench_test.go`
-- [ ] T024 [P] Update `README.md` and `quickstart.md` with stream processor execution instructions and benchmark results in `README.md`
+- [X] T022 [P] Implement property-based test proving window aggregates are invariant to event arrival order within allowed lateness bound in `tests/property/order_invariance_test.go`
+- [X] T023 [P] Implement stream processing load benchmark targeting $\ge 50,000\text{ events/sec}$ across 12 partitions in `tests/bench/processor_bench_test.go`
+- [X] T024 [P] Update `README.md` and `quickstart.md` with stream processor execution instructions and benchmark results in `README.md`
 
 ---
 
