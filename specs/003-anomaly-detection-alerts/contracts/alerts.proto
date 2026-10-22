@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package pulse.alert.v1;
+
+option go_package = "github.com/losercreates/pulse/proto/v1;telemetryv1";
+
+// AlertSeverity indicates the statistical deviation level of the anomaly.
+enum AlertSeverity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_INFO = 1;     // 2.5 <= z < 3.0
+  SEVERITY_WARNING = 2;  // 3.0 <= z < 5.0
+  SEVERITY_CRITICAL = 3; // z >= 5.0
+}
+
+// AlertStatus represents the lifecycle phase of an incident.
+enum AlertStatus {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_FIRING = 1;   // Anomaly triggered or ongoing
+  STATUS_RESOLVED = 2; // Metric returned within nominal tolerance for N samples
+}
+
+// AlertEvent encapsulates an anomaly detection alert published to telemetry.alerts.
+message AlertEvent {
+  string alert_id = 1;
+  string device_id = 2;
+  string metric_name = 3;
+  double trigger_value = 4;
+  double expected_mean = 5;
+  double standard_deviation = 6;
+  double z_score = 7;
+  AlertSeverity severity = 8;
+  AlertStatus status = 9;
+  int64 timestamp_ns = 10;
+  int32 partition_id = 11;
+}
