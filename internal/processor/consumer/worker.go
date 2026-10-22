@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/losercreates/pulse/internal/alert/detector"
 	"github.com/losercreates/pulse/internal/processor/metrics"
 	"github.com/losercreates/pulse/internal/processor/watermark"
 	"github.com/losercreates/pulse/internal/processor/window"
@@ -25,8 +26,8 @@ type LateSink interface {
 }
 
 // PartitionWorker runs a dedicated loop for a single Redpanda partition.
-// In accordance with Constitution Principle I, all window and watermark state is strictly
-// partition-local with zero mutexes or locks on the ingestion hot path.
+// In accordance with Constitution Principle I, all window, watermark, and anomaly baseline state
+// is strictly partition-local with zero mutexes or locks on the ingestion hot path.
 type PartitionWorker struct {
 	topic         string
 	partitionID   int32
@@ -35,6 +36,8 @@ type PartitionWorker struct {
 	windowMgr     *window.WindowManager
 	aggPublisher  AggregatePublisher
 	lateSink      LateSink
+	detector      *detector.AnomalyDetector
+	alertPub      detector.AlertPublisher
 	metrics       *metrics.Metrics
 	idleCheckTick time.Duration
 
@@ -94,6 +97,12 @@ func (w *PartitionWorker) HighOffset() int64 {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.highOffset
+}
+
+// SetAlertPipeline injects partition-local anomaly detection and decoupled alert publishing.
+func (w *PartitionWorker) SetAlertPipeline(det *detector.AnomalyDetector, pub detector.AlertPublisher) {
+	w.detector = det
+	w.alertPub = pub
 }
 
 // Run executes the partition-local consumption loop until ctx is cancelled.
@@ -160,6 +169,13 @@ func (w *PartitionWorker) processRecord(ctx context.Context, record *kgo.Record,
 	// Advance event-time clock and incorporate into open windows
 	w.watermark.ProcessEvent(eventTimeNs)
 	w.windowMgr.ProcessReading(eventTimeNs, reading.DeviceId, reading.MetricName, reading.Value)
+
+	// Real-time statistical anomaly detection with zero hot-path locks (Constitution Principle I & IV)
+	if w.detector != nil && w.alertPub != nil {
+		if alert := w.detector.ProcessReading(reading.DeviceId, reading.MetricName, reading.Value, eventTimeNs, w.partitionID); alert != nil {
+			_ = w.alertPub.PublishAlert(ctx, alert)
+		}
+	}
 
 	// Close any windows expired by the advanced watermark
 	emitted := w.windowMgr.AdvanceWatermark(w.watermark.CurrentWatermark())

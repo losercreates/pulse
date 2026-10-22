@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/losercreates/pulse/internal/alert/detector"
+	"github.com/losercreates/pulse/internal/alert/incident"
 	"github.com/losercreates/pulse/internal/processor/config"
 	"github.com/losercreates/pulse/internal/processor/metrics"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -18,6 +21,7 @@ type PartitionConsumerGroup struct {
 	client       *kgo.Client
 	aggPublisher AggregatePublisher
 	lateSink     LateSink
+	alertPub     detector.AlertPublisher
 	metrics      *metrics.Metrics
 
 	mu      sync.RWMutex
@@ -68,6 +72,11 @@ func NewPartitionConsumerGroup(
 // Client returns the underlying Franz-go client.
 func (g *PartitionConsumerGroup) Client() *kgo.Client {
 	return g.client
+}
+
+// SetAlertPublisher configures the alert event publisher for partition workers.
+func (g *PartitionConsumerGroup) SetAlertPublisher(pub detector.AlertPublisher) {
+	g.alertPub = pub
 }
 
 // Start begins polling fetches and dispatching them to partition workers.
@@ -159,6 +168,13 @@ func (g *PartitionConsumerGroup) onAssigned(ctx context.Context, client *kgo.Cli
 				g.metrics,
 				4096,
 			)
+
+			if g.alertPub != nil {
+				det := detector.NewAnomalyDetector(0.05, 3.0, 0.0001, 30)
+				tracker := incident.NewIncidentTracker(5*time.Minute, 10)
+				det.WithIncidentTracker(tracker)
+				w.SetAlertPipeline(det, g.alertPub)
+			}
 
 			workerCtx, cancel := context.WithCancel(context.Background())
 			done := make(chan struct{})

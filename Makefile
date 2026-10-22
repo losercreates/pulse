@@ -13,6 +13,10 @@ proto:
 		--proto_path=specs/002-stream-processor-core/contracts \
 		--go_out=proto/v1 --go_opt=paths=source_relative \
 		specs/002-stream-processor-core/contracts/aggregates.proto
+	$(PROTOC) --proto_path=specs/001-telemetry-ingestion/contracts \
+		--proto_path=specs/003-anomaly-detection-alerts/contracts \
+		--go_out=proto/v1 --go_opt=paths=source_relative \
+		specs/003-anomaly-detection-alerts/contracts/alerts.proto
 	@echo "Protobuf code generation complete in proto/v1"
 
 up:
@@ -24,6 +28,7 @@ down:
 build: proto
 	$(GO) build -o bin/gateway ./cmd/gateway
 	$(GO) build -o bin/processor ./cmd/processor
+	$(GO) build -o bin/alertd ./cmd/alertd
 
 run: build
 	./bin/gateway

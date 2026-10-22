@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/losercreates/pulse/internal/alert/detector"
 	"github.com/losercreates/pulse/internal/processor/config"
 	"github.com/losercreates/pulse/internal/processor/consumer"
 	"github.com/losercreates/pulse/internal/processor/latesink"
@@ -39,12 +40,14 @@ func main() {
 
 	aggPub := publisher.NewAggregatePublisher(producerClient, cfg.TopicAggregates)
 	lateSink := latesink.NewLateDataSink(producerClient, cfg.TopicLate)
+	alertPub := detector.NewKafkaAlertPublisher(producerClient, "telemetry.alerts")
 
 	// 2. Setup Partition Consumer Group
 	consumerGroup, err := consumer.NewPartitionConsumerGroup(cfg, aggPub, lateSink, m)
 	if err != nil {
 		log.Fatalf("Failed to initialize Partition Consumer Group: %v", err)
 	}
+	consumerGroup.SetAlertPublisher(alertPub)
 
 	checkpointMgr := consumer.NewCheckpointManager(consumerGroup, consumerGroup.Client(), cfg.TopicRaw, 1*time.Second)
 

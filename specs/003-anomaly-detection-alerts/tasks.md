@@ -10,8 +10,8 @@
 
 **Purpose**: Topic provisioning in Docker Compose and build automation for alert contracts and dispatcher daemon.
 
-- [ ] T001 [P] Update `deployments/docker-compose.yml` to provision topic `telemetry.alerts` (12 partitions) in `deployments/docker-compose.yml`
-- [ ] T002 [P] Update `Makefile` with targets to compile `alerts.proto` and build `cmd/alertd` in `Makefile`
+- [X] T001 [P] Update `deployments/docker-compose.yml` to provision topic `telemetry.alerts` (12 partitions) in `deployments/docker-compose.yml`
+- [X] T002 [P] Update `Makefile` with targets to compile `alerts.proto` and build `cmd/alertd` in `Makefile`
 
 ---
 
@@ -21,9 +21,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Compile Protobuf v3 contract from `specs/003-anomaly-detection-alerts/contracts/alerts.proto` into `proto/v1/alerts.pb.go`
-- [ ] T004 [P] Implement alert system configuration loader (`ALERT_EWMA_ALPHA`, `ALERT_K_SIGMA`, `ALERT_VARIANCE_EPSILON`, `ALERT_COOLDOWN_DURATION`, `ALERT_WEBHOOK_URL`) in `internal/alert/config/config.go`
-- [ ] T005 [P] Implement Prometheus metrics registry (anomaly rates, active firing alerts, dispatch latency histogram, circuit breaker states) in `internal/alert/metrics/metrics.go`
+- [X] T003 Compile Protobuf v3 contract from `specs/003-anomaly-detection-alerts/contracts/alerts.proto` into `proto/v1/alerts.pb.go`
+- [X] T004 [P] Implement alert system configuration loader (`ALERT_EWMA_ALPHA`, `ALERT_K_SIGMA`, `ALERT_VARIANCE_EPSILON`, `ALERT_COOLDOWN_DURATION`, `ALERT_WEBHOOK_URL`) in `internal/alert/config/config.go`
+- [X] T005 [P] Implement Prometheus metrics registry (anomaly rates, active firing alerts, dispatch latency histogram, circuit breaker states) in `internal/alert/metrics/metrics.go`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin.
 
@@ -37,13 +37,13 @@
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Create unit tests for online EWMA mean, rolling variance updates, warmup threshold, and variance floor guardrail in `internal/alert/detector/baseline_test.go`
+- [X] T006 [P] [US1] Create unit tests for online EWMA mean, rolling variance updates, warmup threshold, and variance floor guardrail in `internal/alert/detector/baseline_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Implement `StatisticalBaseline` tracking EWMA mean and rolling variance with verbatim constraints `"Minimum N_warmup = 30 samples before alert evaluation"` and `"guarded by sigma^2 >= epsilon"` with `"device_id: Machine or sensor identifier (1 to 128 characters)"` in `internal/alert/detector/baseline.go`
-- [ ] T008 [US1] Implement `AnomalyDetector` evaluating $|value - \text{EWMA}| > k \times \sigma$ and classifying severity (`INFO`, `WARNING`, `CRITICAL`) based on $z$-score in `internal/alert/detector/detector.go`
-- [ ] T009 [US1] Integrate `AnomalyDetector` into the stream processor partition worker loop with zero hot-path locks in `internal/processor/consumer/worker.go`
+- [X] T007 [US1] Implement `StatisticalBaseline` tracking EWMA mean and rolling variance with verbatim constraints `"Minimum N_warmup = 30 samples before alert evaluation"` and `"guarded by sigma^2 >= epsilon"` with `"device_id: Machine or sensor identifier (1 to 128 characters)"` in `internal/alert/detector/baseline.go`
+- [X] T008 [US1] Implement `AnomalyDetector` evaluating $|value - \text{EWMA}| > k \times \sigma$ and classifying severity (`INFO`, `WARNING`, `CRITICAL`) based on $z$-score in `internal/alert/detector/detector.go`
+- [X] T009 [US1] Integrate `AnomalyDetector` into the stream processor partition worker loop with zero hot-path locks in `internal/processor/consumer/worker.go`
 
 **Checkpoint**: User Story 1 is functional and delivers the core partition-local statistical anomaly detection MVP.
 
@@ -57,12 +57,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T010 [P] [US2] Create unit and mock tests for alert publishing and decoupled consumer worker pool in `internal/alert/dispatcher/dispatcher_test.go`
+- [X] T010 [P] [US2] Create unit and mock tests for alert publishing and decoupled consumer worker pool in `internal/alert/dispatcher/dispatcher_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Implement `AlertPublisher` publishing detected `AlertEvent` records asynchronously to Redpanda topic `telemetry.alerts` in `internal/alert/detector/publisher.go`
-- [ ] T012 [US2] Implement `AlertDispatcher` Franz-go consumer group orchestrator and concurrent worker pool consuming from `telemetry.alerts` in `internal/alert/dispatcher/dispatcher.go`
+- [X] T011 [US2] Implement `AlertPublisher` publishing detected `AlertEvent` records asynchronously to Redpanda topic `telemetry.alerts` in `internal/alert/detector/publisher.go`
+- [X] T012 [US2] Implement `AlertDispatcher` Franz-go consumer group orchestrator and concurrent worker pool consuming from `telemetry.alerts` in `internal/alert/dispatcher/dispatcher.go`
 
 **Checkpoint**: Stream processing is completely isolated from downstream alert dispatching, strictly honoring Constitution Principle IV.
 
@@ -76,12 +76,12 @@
 
 ### Tests for User Story 3
 
-- [ ] T013 [P] [US3] Create unit tests for cooldown suppression and auto-resolution hysteresis in `internal/alert/incident/tracker_test.go`
+- [X] T013 [P] [US3] Create unit tests for cooldown suppression and auto-resolution hysteresis in `internal/alert/incident/tracker_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] Implement `IncidentTracker` enforcing verbatim constraints `"cooldown suppression (default: 5 minutes)"` and `"Hysteresis counter for auto-resolution (threshold N = 10)"` in `internal/alert/incident/tracker.go`
-- [ ] T015 [US3] Integrate `IncidentTracker` with alert detector pipeline to emit `STATUS_FIRING` and `STATUS_RESOLVED` events in `internal/alert/detector/detector.go`
+- [X] T014 [US3] Implement `IncidentTracker` enforcing verbatim constraints `"cooldown suppression (default: 5 minutes)"` and `"Hysteresis counter for auto-resolution (threshold N = 10)"` in `internal/alert/incident/tracker.go`
+- [X] T015 [US3] Integrate `IncidentTracker` with alert detector pipeline to emit `STATUS_FIRING` and `STATUS_RESOLVED` events in `internal/alert/detector/detector.go`
 
 **Checkpoint**: Sustained incidents do not cause notification storms, and normalized metrics automatically resolve open alerts.
 
@@ -95,13 +95,13 @@
 
 ### Tests for User Story 4
 
-- [ ] T016 [P] [US4] Create unit tests for HTTP webhook dispatching, exponential retry with jitter, and circuit breaker state transitions in `internal/alert/dispatcher/circuit_breaker_test.go`
+- [X] T016 [P] [US4] Create unit tests for HTTP webhook dispatching, exponential retry with jitter, and circuit breaker state transitions in `internal/alert/dispatcher/circuit_breaker_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T017 [US4] Implement HTTP Webhook sink with JSON formatting and dead-letter storage sink in `internal/alert/sink/webhook.go` and `internal/alert/sink/deadletter.go`
-- [ ] T018 [US4] Implement 3-state `CircuitBreaker` (`CLOSED`, `OPEN`, `HALF_OPEN`) with verbatim constraint `"Trips to OPEN when consecutive_failures >= 5; hold for 30s"` and exponential backoff in `internal/alert/dispatcher/circuit_breaker.go`
-- [ ] T019 [US4] Implement standalone `cmd/alertd/main.go` bootstrapping the alert dispatcher daemon, consumer group, and graceful OS shutdown in `cmd/alertd/main.go`
+- [X] T017 [US4] Implement HTTP Webhook sink with JSON formatting and dead-letter storage sink in `internal/alert/sink/webhook.go` and `internal/alert/sink/deadletter.go`
+- [X] T018 [US4] Implement 3-state `CircuitBreaker` (`CLOSED`, `OPEN`, `HALF_OPEN`) with verbatim constraint `"Trips to OPEN when consecutive_failures >= 5; hold for 30s"` and exponential backoff in `internal/alert/dispatcher/circuit_breaker.go`
+- [X] T019 [US4] Implement standalone `cmd/alertd/main.go` bootstrapping the alert dispatcher daemon, consumer group, and graceful OS shutdown in `cmd/alertd/main.go`
 
 **Checkpoint**: The alert dispatcher delivers notifications resiliently and protects itself against downstream outages.
 
@@ -115,7 +115,7 @@
 
 ### Implementation for User Story 5
 
-- [ ] T020 [P] [US5] Expose HTTP server for Prometheus scraping (`/metrics`) and health probe (`/healthz`) on port `:8083` in `internal/alert/server/http.go`
+- [X] T020 [P] [US5] Expose HTTP server for Prometheus scraping (`/metrics`) and health probe (`/healthz`) on port `:8083` in `internal/alert/server/http.go`
 
 ---
 
@@ -123,9 +123,9 @@
 
 **Purpose**: Integration chaos testing, performance benchmarking, and documentation.
 
-- [ ] T021 [P] Implement chaos integration test verifying that downstream webhook endpoints with 30-second delays cause zero latency degradation or consumer lag on the stream processor in `tests/integration/decoupled_alert_test.go`
-- [ ] T022 [P] Implement anomaly detection and alert dispatching benchmark in `tests/bench/alert_bench_test.go`
-- [ ] T023 [P] Update `README.md` and `quickstart.md` with Milestone 003 architecture and run instructions in `README.md`
+- [X] T021 [P] Implement chaos integration test verifying that downstream webhook endpoints with 30-second delays cause zero latency degradation or consumer lag on the stream processor in `tests/integration/decoupled_alert_test.go`
+- [X] T022 [P] Implement anomaly detection and alert dispatching benchmark in `tests/bench/alert_bench_test.go`
+- [X] T023 [P] Update `README.md` and `quickstart.md` with Milestone 003 architecture and run instructions in `README.md`
 
 ---
 

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/losercreates/pulse/internal/alert/detector"
+	"github.com/losercreates/pulse/internal/alert/incident"
 	telemetryv1 "github.com/losercreates/pulse/proto/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -134,4 +136,89 @@ func TestPartitionWorker_IngestionAndWatermark(t *testing.T) {
 	<-done
 
 	assert.Equal(t, int64(5), worker.HighOffset())
+}
+
+type mockAlertPublisher struct {
+	mu     sync.Mutex
+	alerts []*telemetryv1.AlertEvent
+}
+
+func (m *mockAlertPublisher) PublishAlert(ctx context.Context, alert *telemetryv1.AlertEvent) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.alerts = append(m.alerts, alert)
+	return nil
+}
+
+func (m *mockAlertPublisher) getAlerts() []*telemetryv1.AlertEvent {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	copied := make([]*telemetryv1.AlertEvent, len(m.alerts))
+	copy(copied, m.alerts)
+	return copied
+}
+
+func TestPartitionWorker_AnomalyDetectionIntegration(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	mockAgg := &mockAggregatePublisher{}
+	mockLate := &mockLateSink{}
+	mockAlert := &mockAlertPublisher{}
+
+	worker := NewPartitionWorker(
+		"telemetry.raw",
+		3,
+		5*time.Second,
+		10*time.Second,
+		10*time.Second,
+		60*time.Second,
+		10*time.Second,
+		mockAgg,
+		mockLate,
+		nil,
+		100,
+	)
+
+	det := detector.NewAnomalyDetector(0.1, 3.0, 0.0001, 30)
+	tracker := incident.NewIncidentTracker(5*time.Minute, 10)
+	det.WithIncidentTracker(tracker)
+	worker.SetAlertPipeline(det, mockAlert)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		worker.Run(ctx)
+	}()
+
+	// 1. Warmup: 30 nominal readings (value = 50.0)
+	for i := 0; i < 30; i++ {
+		worker.Inbound() <- makeRecord(t, 3, int64(i+1), "sensor-01", "vibration", 50.0, int64(time.Duration(i+1)*time.Second))
+	}
+
+	// 2. Anomaly spike (value = 150.0)
+	worker.Inbound() <- makeRecord(t, 3, 31, "sensor-01", "vibration", 150.0, int64(32*time.Second))
+
+	// Verify STATUS_FIRING alert emitted
+	assert.Eventually(t, func() bool {
+		alerts := mockAlert.getAlerts()
+		return len(alerts) == 1 &&
+			alerts[0].Status == telemetryv1.AlertStatus_STATUS_FIRING &&
+			alerts[0].DeviceId == "sensor-01" &&
+			alerts[0].PartitionId == 3
+	}, 2*time.Second, 50*time.Millisecond)
+
+	// 3. 10 nominal readings -> auto-resolution
+	for i := 0; i < 10; i++ {
+		worker.Inbound() <- makeRecord(t, 3, int64(32+i), "sensor-01", "vibration", 50.0, int64(time.Duration(33+i)*time.Second))
+	}
+
+	// Verify STATUS_RESOLVED alert emitted
+	assert.Eventually(t, func() bool {
+		alerts := mockAlert.getAlerts()
+		return len(alerts) == 2 && alerts[1].Status == telemetryv1.AlertStatus_STATUS_RESOLVED
+	}, 2*time.Second, 50*time.Millisecond)
+
+	cancel()
+	<-done
 }
