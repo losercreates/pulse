@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package pulse.storage.v1;
+
+option go_package = "github.com/losercreates/pulse/proto/v1;telemetryv1";
+
+// StoredAggregate represents an idempotent persisted window aggregate record.
+message StoredAggregate {
+  string device_id = 1;
+  string metric_name = 2;
+  int64 window_start_ns = 3;
+  int64 window_end_ns = 4;
+  uint64 count = 5;
+  double sum = 6;
+  double min = 7;
+  double max = 8;
+  double mean = 9;
+}
+
+// RollupBucket represents a downsampled time-bucket aggregating multiple window intervals.
+message RollupBucket {
+  int64 bucket_start_ns = 1;
+  int64 bucket_end_ns = 2;
+  uint64 count = 3;
+  double sum = 4;
+  double min = 5;
+  double max = 6;
+  double mean = 7;
+}
+
+// DeviceCatalogEntry describes an active device discovered in storage.
+message DeviceCatalogEntry {
+  string device_id = 1;
+  repeated string metrics = 2;
+  int64 first_seen_ns = 3;
+  int64 last_seen_ns = 4;
+}
+
+message PutAggregatesRequest {
+  repeated StoredAggregate aggregates = 1;
+}
+
+message PutAggregatesResponse {
+  uint32 inserted_count = 1;
+  uint32 updated_count = 2;
+}
+
+message QueryTimeSeriesRequest {
+  string device_id = 1;
+  string metric_name = 2;
+  int64 start_time_ns = 3;
+  int64 end_time_ns = 4;
+  uint32 limit = 5;
+}
+
+message QueryTimeSeriesResponse {
+  repeated StoredAggregate records = 1;
+  uint32 total_count = 2;
+}
+
+message QueryRollupRequest {
+  string device_id = 1;
+  string metric_name = 2;
+  int64 start_time_ns = 3;
+  int64 end_time_ns = 4;
+  int64 step_ns = 5;
+}
+
+message QueryRollupResponse {
+  repeated RollupBucket buckets = 1;
+  uint32 total_buckets = 2;
+}
+
+message GetDeviceCatalogRequest {
+  uint32 limit = 1;
+}
+
+message GetDeviceCatalogResponse {
+  repeated DeviceCatalogEntry devices = 1;
+}
+
+// ChronoDBService provides polyglot storage and historical query APIs across the storage boundary.
+service ChronoDBService {
+  rpc PutAggregates(PutAggregatesRequest) returns (PutAggregatesResponse);
+  rpc QueryTimeSeries(QueryTimeSeriesRequest) returns (QueryTimeSeriesResponse);
+  rpc QueryRollup(QueryRollupRequest) returns (QueryRollupResponse);
+  rpc GetDeviceCatalog(GetDeviceCatalogRequest) returns (GetDeviceCatalogResponse);
+}
