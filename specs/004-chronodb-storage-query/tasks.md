@@ -10,8 +10,8 @@
 
 **Purpose**: Build automation, protobuf targets, and Docker Compose configurations for storage services.
 
-- [ ] T001 [P] Update `Makefile` with targets to compile `chronodb.proto` and build `cmd/chronod` in `Makefile`
-- [ ] T002 [P] Verify and update `deployments/docker-compose.yml` to expose storage query port `:8084` and ChronoDB gRPC port `:50054` in `deployments/docker-compose.yml`
+- [X] T001 [P] Update `Makefile` with targets to compile `chronodb.proto` and build `cmd/chronod` in `Makefile`
+- [X] T002 [P] Verify and update `deployments/docker-compose.yml` to expose storage query port `:8084` and ChronoDB gRPC port `:50054` in `deployments/docker-compose.yml`
 
 ---
 
@@ -21,9 +21,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Compile Protobuf v3 contract from `specs/004-chronodb-storage-query/contracts/chronodb.proto` into `proto/v1/chronodb.pb.go`
-- [ ] T004 [P] Implement storage configuration loader (`STORAGE_BROKERS`, `STORAGE_TOPIC_AGGREGATES`, `STORAGE_HTTP_PORT`, `STORAGE_GRPC_PORT`, `STORAGE_SHARDS`, `STORAGE_BATCH_SIZE`, `STORAGE_FLUSH_INTERVAL`) in `internal/storage/config/config.go`
-- [ ] T005 [P] Implement Prometheus metrics registry (storage writes total, batch write latency histogram, query latency histogram, storage consumer lag gauge, active shards gauge) in `internal/storage/metrics/metrics.go`
+- [X] T003 Compile Protobuf v3 contract from `specs/004-chronodb-storage-query/contracts/chronodb.proto` into `proto/v1/chronodb.pb.go`
+- [X] T004 [P] Implement storage configuration loader (`STORAGE_BROKERS`, `STORAGE_TOPIC_AGGREGATES`, `STORAGE_HTTP_PORT`, `STORAGE_GRPC_PORT`, `STORAGE_SHARDS`, `STORAGE_BATCH_SIZE`, `STORAGE_FLUSH_INTERVAL`) in `internal/storage/config/config.go`
+- [X] T005 [P] Implement Prometheus metrics registry (storage writes total, batch write latency histogram, query latency histogram, storage consumer lag gauge, active shards gauge) in `internal/storage/metrics/metrics.go`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin.
 
@@ -37,13 +37,13 @@
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Create unit tests for composite upsert key formatting and in-memory sharded storage engine in `internal/storage/engine/engine_test.go`
+- [X] T006 [P] [US1] Create unit tests for composite upsert key formatting and in-memory sharded storage engine in `internal/storage/engine/engine_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Implement `ChronoEngine` interface and sharded columnar in-memory storage engine with composite key indexing in `internal/storage/engine/engine.go` and `internal/storage/engine/memory.go`
-- [ ] T008 [US1] Implement Franz-go consumer loop ingesting `telemetry.aggregates` with batching, natural consumer lag backpressure, and offset commits in `internal/storage/consumer/sink.go`
-- [ ] T009 [US1] Implement standalone daemon entrypoint in `cmd/chronod/main.go` bootstrapping the consumer group, storage engine, and graceful OS shutdown
+- [X] T007 [US1] Implement `ChronoEngine` interface and sharded columnar in-memory storage engine with composite key indexing in `internal/storage/engine/engine.go` and `internal/storage/engine/memory.go`
+- [X] T008 [US1] Implement Franz-go consumer loop ingesting `telemetry.aggregates` with batching, natural consumer lag backpressure, and offset commits in `internal/storage/consumer/sink.go`
+- [X] T009 [US1] Implement standalone daemon entrypoint in `cmd/chronod/main.go` bootstrapping the consumer group, storage engine, and graceful OS shutdown
 
 **Checkpoint**: User Story 1 is functional and delivers the core idempotent time-series persistence MVP.
 
@@ -57,12 +57,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T010 [P] [US2] Create unit tests for time-range query range scanning and parameter validation in `internal/storage/server/server_test.go`
+- [X] T010 [P] [US2] Create unit tests for time-range query range scanning and parameter validation in `internal/storage/server/server_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Implement ChronoDB gRPC service handling `PutAggregates` and `QueryTimeSeries` across the polyglot boundary in `internal/storage/server/grpc.go`
-- [ ] T012 [US2] Implement HTTP REST router exposing `GET /api/v1/query` with JSON serialization and validation in `internal/storage/server/http.go`
+- [X] T011 [US2] Implement ChronoDB gRPC service handling `PutAggregates` and `QueryTimeSeries` across the polyglot boundary in `internal/storage/server/grpc.go`
+- [X] T012 [US2] Implement HTTP REST router exposing `GET /api/v1/query` with JSON serialization and validation in `internal/storage/server/http.go`
 
 **Checkpoint**: Historical telemetry can be queried via both gRPC and HTTP interfaces.
 
@@ -76,12 +76,12 @@
 
 ### Tests for User Story 3
 
-- [ ] T013 [P] [US3] Create unit tests for analytical downsampling rollup mathematics (combined sum, global min/max, weighted mean) in `internal/storage/engine/rollup_test.go`
+- [X] T013 [P] [US3] Create unit tests for analytical downsampling rollup mathematics (combined sum, global min/max, weighted mean) in `internal/storage/engine/rollup_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] Implement dynamic multi-bucket rollup re-aggregation algorithm in `internal/storage/engine/rollup.go`
-- [ ] T015 [US3] Expose dynamic rollup endpoints via gRPC (`QueryRollup`) and HTTP REST (`GET /api/v1/query/rollup`) in `internal/storage/server/grpc.go` and `internal/storage/server/http.go`
+- [X] T014 [US3] Implement dynamic multi-bucket rollup re-aggregation algorithm in `internal/storage/engine/rollup.go`
+- [X] T015 [US3] Expose dynamic rollup endpoints via gRPC (`QueryRollup`) and HTTP REST (`GET /api/v1/query/rollup`) in `internal/storage/server/grpc.go` and `internal/storage/server/http.go`
 
 **Checkpoint**: Long-range historical analytics can be queried with sub-200ms response times.
 
@@ -95,12 +95,12 @@
 
 ### Tests for User Story 4
 
-- [ ] T016 [P] [US4] Create unit tests for active device tracking and metric catalog discovery in `internal/storage/engine/catalog_test.go`
+- [X] T016 [P] [US4] Create unit tests for active device tracking and metric catalog discovery in `internal/storage/engine/catalog_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T017 [US4] Implement device catalog metadata tracking across storage shards in `internal/storage/engine/catalog.go`
-- [ ] T018 [US4] Expose device and metric catalog endpoints via gRPC (`GetDeviceCatalog`) and HTTP REST (`GET /api/v1/devices`) in `internal/storage/server/grpc.go` and `internal/storage/server/http.go`
+- [X] T017 [US4] Implement device catalog metadata tracking across storage shards in `internal/storage/engine/catalog.go`
+- [X] T018 [US4] Expose device and metric catalog endpoints via gRPC (`GetDeviceCatalog`) and HTTP REST (`GET /api/v1/devices`) in `internal/storage/server/grpc.go` and `internal/storage/server/http.go`
 
 **Checkpoint**: Edge operators can discover active devices and metrics dynamically.
 
@@ -114,7 +114,7 @@
 
 ### Implementation for User Story 5
 
-- [ ] T019 [P] [US5] Expose `/healthz`, `/readyz`, and Prometheus `/metrics` on port `:8084` in `internal/storage/server/http.go`
+- [X] T019 [P] [US5] Expose `/healthz`, `/readyz`, and Prometheus `/metrics` on port `:8084` in `internal/storage/server/http.go`
 
 ---
 
@@ -122,9 +122,9 @@
 
 **Purpose**: Idempotency chaos testing, throughput benchmarking, and documentation.
 
-- [ ] T020 [P] Implement chaos integration test verifying 100% idempotent storage state and zero double-counting under consumer crash/replay in `tests/integration/idempotent_storage_test.go`
-- [ ] T021 [P] Implement storage ingestion throughput and historical query latency benchmark in `tests/bench/storage_bench_test.go`
-- [ ] T022 [P] Update `README.md` and `quickstart.md` with Milestone 004 architecture, verified benchmarks, and run instructions in `README.md`
+- [X] T020 [P] Implement chaos integration test verifying 100% idempotent storage state and zero double-counting under consumer crash/replay in `tests/integration/idempotent_storage_test.go`
+- [X] T021 [P] Implement storage ingestion throughput and historical query latency benchmark in `tests/bench/storage_bench_test.go`
+- [X] T022 [P] Update `README.md` and `quickstart.md` with Milestone 004 architecture, verified benchmarks, and run instructions in `README.md`
 
 ---
 

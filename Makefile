@@ -17,6 +17,11 @@ proto:
 		--proto_path=specs/003-anomaly-detection-alerts/contracts \
 		--go_out=proto/v1 --go_opt=paths=source_relative \
 		specs/003-anomaly-detection-alerts/contracts/alerts.proto
+	$(PROTOC) --proto_path=specs/001-telemetry-ingestion/contracts \
+		--proto_path=specs/004-chronodb-storage-query/contracts \
+		--go_out=proto/v1 --go_opt=paths=source_relative \
+		--go-grpc_out=proto/v1 --go-grpc_opt=paths=source_relative \
+		specs/004-chronodb-storage-query/contracts/chronodb.proto
 	@echo "Protobuf code generation complete in proto/v1"
 
 up:
@@ -29,6 +34,7 @@ build: proto
 	$(GO) build -o bin/gateway ./cmd/gateway
 	$(GO) build -o bin/processor ./cmd/processor
 	$(GO) build -o bin/alertd ./cmd/alertd
+	$(GO) build -o bin/chronod ./cmd/chronod
 
 run: build
 	./bin/gateway

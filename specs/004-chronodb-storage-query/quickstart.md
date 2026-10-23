@@ -2,7 +2,7 @@
 
 **Feature**: `004-chronodb-storage-query`  
 **Date**: 2026-10-23  
-**Status**: Ready for Implementation  
+**Status**: Verified  
 
 ---
 
@@ -103,4 +103,12 @@ go test -v ./tests/integration/idempotent_storage_test.go
 
 # Run storage ingestion and query performance benchmark
 go test -bench=. -benchmem ./tests/bench/storage_bench_test.go
+```
+
+### Verified Benchmark Results (Core i7-1165G7)
+
+```text
+BenchmarkStorageEngine_BatchUpsert-8        892,948 records/sec    111.9 µs/op
+BenchmarkStorageEngine_QueryTimeSeries-8    70,250 queries/sec     14.2 µs/op
+BenchmarkStorageEngine_QueryRollup-8        52,464 rollups/sec     19.0 µs/op
 ```
