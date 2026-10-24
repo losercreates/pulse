@@ -1,4 +1,4 @@
-.PHONY: proto up down test bench build run clean
+.PHONY: proto up down test bench build run clean e2e
 
 GO ?= go
 PROTOC ?= protoc
@@ -44,6 +44,9 @@ test:
 
 bench:
 	$(GO) test -bench=. -benchmem ./tests/bench/...
+
+e2e: build
+	./scripts/e2e_pipeline.sh
 
 clean:
 	rm -rf bin/

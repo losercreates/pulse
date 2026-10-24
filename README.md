@@ -185,4 +185,5 @@ curl -s http://localhost:8084/metrics | grep pulse_storage
 ```bash
 make test
 make bench
+make e2e
 ```
