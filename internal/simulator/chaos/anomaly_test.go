@@ -1,6 +1,7 @@
 package chaos_test
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -23,8 +24,9 @@ func TestAnomalyInjector_StepSpikes(t *testing.T) {
 
 	injected := injector.MaybeInject(reading, 2.5, 0.5)
 	assert.True(t, injected)
-	// With 6*sigma spike (6 * 0.5 = 3.0), value should be 2.5 + 3.0 = 5.5
-	assert.GreaterOrEqual(t, reading.Value, 5.0)
+	// With 6*sigma spike (6 * 0.5 = 3.0), magnitude of deviation from nominal base must be >= 3.0
+	deviation := math.Abs(reading.Value - 2.5)
+	assert.GreaterOrEqual(t, deviation, 2.99)
 	assert.Equal(t, int64(1), injector.SpikeCount())
 }
 
