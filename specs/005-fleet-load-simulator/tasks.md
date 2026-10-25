@@ -10,8 +10,8 @@
 
 **Purpose**: Build automation, directory scaffolding, and Makefile targets for simulator binaries.
 
-- [ ] T001 Update `Makefile` with targets to compile `cmd/simulator` into `bin/simulator` and add `sim` run target in `Makefile`
-- [ ] T002 [P] Create directory structure for simulator entrypoint and internal modules in `cmd/simulator/` and `internal/simulator/`
+- [X] T001 Update `Makefile` with targets to compile `cmd/simulator` into `bin/simulator` and add `sim` run target in `Makefile`
+- [X] T002 [P] Create directory structure for simulator entrypoint and internal modules in `cmd/simulator/` and `internal/simulator/`
 
 ---
 
@@ -21,10 +21,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 [P] Implement simulator configuration loader supporting CLI flags and environment variables (`SIM_TARGET_RATE`, `SIM_NUM_DEVICES`, `SIM_DURATION`, `SIM_TRANSPORT`, `SIM_PROFILE`) in `internal/simulator/config/config.go`
-- [ ] T004 [P] Implement lock-free atomic throughput, latency, and error counter in `internal/simulator/metrics/tracker.go`
-- [ ] T005 [P] Implement physical sensor signal generator (sinusoidal + Gaussian white noise + baseline drift) in `internal/simulator/signal/signal.go`
-- [ ] T006 [P] Implement high-resolution token bucket rate limiter and micro-batch pacing coordinator in `internal/simulator/pacing/limiter.go`
+- [X] T003 [P] Implement simulator configuration loader supporting CLI flags and environment variables (`SIM_TARGET_RATE`, `SIM_NUM_DEVICES`, `SIM_DURATION`, `SIM_TRANSPORT`, `SIM_PROFILE`) in `internal/simulator/config/config.go`
+- [X] T004 [P] Implement lock-free atomic throughput, latency, and error counter in `internal/simulator/metrics/tracker.go`
+- [X] T005 [P] Implement physical sensor signal generator (sinusoidal + Gaussian white noise + baseline drift) in `internal/simulator/signal/signal.go`
+- [X] T006 [P] Implement high-resolution token bucket rate limiter and micro-batch pacing coordinator in `internal/simulator/pacing/limiter.go`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin.
 
@@ -38,16 +38,16 @@
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Create unit tests for virtual device topology creation and worker fleet partitioning in `internal/simulator/fleet/fleet_test.go`
-- [ ] T008 [P] [US1] Create unit tests for physical signal generation and boundary clamping in `internal/simulator/signal/signal_test.go`
-- [ ] T009 [P] [US1] Create unit tests for token bucket rate limiter accuracy and micro-batch pacing in `internal/simulator/pacing/limiter_test.go`
+- [X] T007 [P] [US1] Create unit tests for virtual device topology creation and worker fleet partitioning in `internal/simulator/fleet/fleet_test.go`
+- [X] T008 [P] [US1] Create unit tests for physical signal generation and boundary clamping in `internal/simulator/signal/signal_test.go`
+- [X] T009 [P] [US1] Create unit tests for token bucket rate limiter accuracy and micro-batch pacing in `internal/simulator/pacing/limiter_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement industrial device archetypes (`turbine-XXXX`, `motor-XXXX`, `pump-XXXX`, `generator-XXXX`) with realistic metric names and physical units in `internal/simulator/fleet/archetype.go`
-- [ ] T011 [US1] Implement virtual device topology manager and deterministic worker partitioner in `internal/simulator/fleet/fleet.go`
-- [ ] T012 [US1] Implement transport client interface and client-side gRPC streaming sender (`:50051`) and HTTP batch sender (`:8080`) in `internal/simulator/transport/client.go`, `internal/simulator/transport/grpc.go`, and `internal/simulator/transport/http.go`
-- [ ] T013 [US1] Implement standalone simulator CLI main entrypoint bootstrapping fleet, workers, and transports with OS signal handling in `cmd/simulator/main.go`
+- [X] T010 [US1] Implement industrial device archetypes (`turbine-XXXX`, `motor-XXXX`, `pump-XXXX`, `generator-XXXX`) with realistic metric names and physical units in `internal/simulator/fleet/archetype.go`
+- [X] T011 [US1] Implement virtual device topology manager and deterministic worker partitioner in `internal/simulator/fleet/fleet.go`
+- [X] T012 [US1] Implement transport client interface and client-side gRPC streaming sender (`:50051`) and HTTP batch sender (`:8080`) in `internal/simulator/transport/client.go`, `internal/simulator/transport/grpc.go`, and `internal/simulator/transport/http.go`
+- [X] T013 [US1] Implement standalone simulator CLI main entrypoint bootstrapping fleet, workers, and transports with OS signal handling in `cmd/simulator/main.go`
 
 **Checkpoint**: User Story 1 is functional and delivers the core high-throughput steady-state generation MVP.
 
@@ -61,12 +61,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Create unit tests for burst multiplier transitions and burst duration timers in `internal/simulator/chaos/burst_test.go`
+- [X] T014 [P] [US2] Create unit tests for burst multiplier transitions and burst duration timers in `internal/simulator/chaos/burst_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Implement burst traffic schedule and dynamic rate scaling controller in `internal/simulator/chaos/burst.go`
-- [ ] T016 [US2] Wire burst profile controls into worker pacing loop and `cmd/simulator/main.go`
+- [X] T015 [US2] Implement burst traffic schedule and dynamic rate scaling controller in `internal/simulator/chaos/burst.go`
+- [X] T016 [US2] Wire burst profile controls into worker pacing loop and `cmd/simulator/main.go`
 
 **Checkpoint**: Bursty traffic profile operational and validated.
 
@@ -80,12 +80,12 @@
 
 ### Tests for User Story 3
 
-- [ ] T017 [P] [US3] Create unit tests for per-device offline ring buffer accumulation and burst backfill replay in `internal/simulator/chaos/offline_test.go`
+- [X] T017 [P] [US3] Create unit tests for per-device offline ring buffer accumulation and burst backfill replay in `internal/simulator/chaos/offline_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T018 [US3] Implement offline network disconnection state machine and backfill replay flusher in `internal/simulator/chaos/offline.go`
-- [ ] T019 [US3] Wire offline recovery profile into fleet worker loop and `cmd/simulator/main.go`
+- [X] T018 [US3] Implement offline network disconnection state machine and backfill replay flusher in `internal/simulator/chaos/offline.go`
+- [X] T019 [US3] Wire offline recovery profile into fleet worker loop and `cmd/simulator/main.go`
 
 **Checkpoint**: Offline recovery chaos operational and validated.
 
@@ -99,12 +99,12 @@
 
 ### Tests for User Story 4
 
-- [ ] T020 [P] [US4] Create unit tests for step spikes, variance flatlines, and calibration drifts in `internal/simulator/chaos/anomaly_test.go`
+- [X] T020 [P] [US4] Create unit tests for step spikes, variance flatlines, and calibration drifts in `internal/simulator/chaos/anomaly_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T021 [US4] Implement anomaly injection state machines (spikes, flatlines, drifts) in `internal/simulator/chaos/anomaly.go`
-- [ ] T022 [US4] Wire anomaly injection profile into fleet telemetry generation and `cmd/simulator/main.go`
+- [X] T021 [US4] Implement anomaly injection state machines (spikes, flatlines, drifts) in `internal/simulator/chaos/anomaly.go`
+- [X] T022 [US4] Wire anomaly injection profile into fleet telemetry generation and `cmd/simulator/main.go`
 
 **Checkpoint**: Anomaly chaos injection operational and validated.
 
@@ -118,13 +118,13 @@
 
 ### Tests for User Story 5
 
-- [ ] T023 [P] [US5] Create unit tests for JSON SLA report generation against `contracts/report-schema.json` in `internal/simulator/report/report_test.go`
+- [X] T023 [P] [US5] Create unit tests for JSON SLA report generation against `contracts/report-schema.json` in `internal/simulator/report/report_test.go`
 
 ### Implementation for User Story 5
 
-- [ ] T024 [US5] Implement synthetic canary probe emitter and ChronoDB query latency poller in `internal/simulator/canary/probe.go`
-- [ ] T025 [US5] Implement live terminal progress renderer and JSON SLA report generator in `internal/simulator/report/summary.go`
-- [ ] T026 [US5] Wire canary latency tracking and SLA reporting into `cmd/simulator/main.go`
+- [X] T024 [US5] Implement synthetic canary probe emitter and ChronoDB query latency poller in `internal/simulator/canary/probe.go`
+- [X] T025 [US5] Implement live terminal progress renderer and JSON SLA report generator in `internal/simulator/report/summary.go`
+- [X] T026 [US5] Wire canary latency tracking and SLA reporting into `cmd/simulator/main.go`
 
 **Checkpoint**: Live progress dashboard and automated JSON SLA reporting operational.
 
@@ -134,8 +134,8 @@
 
 **Purpose**: Throughput benchmarking, documentation updates, and CI integration.
 
-- [ ] T027 [P] Implement simulator client-side throughput benchmark measuring sustained $> 100,000$ events/sec generation in `tests/bench/simulator_bench_test.go`
-- [ ] T028 [P] Update `README.md` and `specs/005-fleet-load-simulator/quickstart.md` with simulator CLI documentation, verified benchmarks, and operational load testing guide
+- [X] T027 [P] Implement simulator client-side throughput benchmark measuring sustained $> 100,000$ events/sec generation in `tests/bench/simulator_bench_test.go`
+- [X] T028 [P] Update `README.md` and `specs/005-fleet-load-simulator/quickstart.md` with simulator CLI documentation, verified benchmarks, and operational load testing guide
 
 ---
 

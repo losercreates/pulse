@@ -1,4 +1,4 @@
-.PHONY: proto up down test bench build run clean e2e
+.PHONY: proto up down test bench build run clean e2e sim
 
 GO ?= go
 PROTOC ?= protoc
@@ -35,9 +35,13 @@ build: proto
 	$(GO) build -o bin/processor ./cmd/processor
 	$(GO) build -o bin/alertd ./cmd/alertd
 	$(GO) build -o bin/chronod ./cmd/chronod
+	$(GO) build -o bin/simulator ./cmd/simulator
 
 run: build
 	./bin/gateway
+
+sim: build
+	./bin/simulator
 
 test:
 	$(GO) test -v -race ./internal/...

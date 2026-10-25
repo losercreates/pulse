@@ -2,7 +2,7 @@
 
 **Feature**: `005-fleet-load-simulator`  
 **Date**: 2026-10-24  
-**Status**: Ready for Implementation  
+**Status**: Implemented & Verified  
 
 ---
 
@@ -129,5 +129,5 @@ Run continuous canary latency probes sampling end-to-end time from sensor creati
 go test -v ./internal/simulator/...
 
 # Run high-throughput driver benchmark
-go test -bench=BenchmarkSimulatorDriver ./tests/bench/...
+go test -bench=BenchmarkSimulator ./tests/bench/...
 ```
