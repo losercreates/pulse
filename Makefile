@@ -1,4 +1,4 @@
-.PHONY: proto up down test bench build run clean e2e sim
+.PHONY: proto up down obs-up obs-down dashboards test bench build run clean e2e sim
 
 GO ?= go
 PROTOC ?= protoc
@@ -29,6 +29,28 @@ up:
 
 down:
 	docker compose -f deployments/docker-compose.yml down
+
+obs-up:
+	docker compose -f deployments/docker-compose.yml up -d prometheus grafana alertmanager redpanda redpanda-init redpanda-console
+
+obs-down:
+	docker compose -f deployments/docker-compose.yml stop prometheus grafana alertmanager
+
+dashboards:
+	@echo "=================================================================="
+	@echo "Pulse Observability Stack & Grafana Dashboards"
+	@echo "=================================================================="
+	@echo "Grafana UI:             http://localhost:3000 (admin/admin)"
+	@echo "Prometheus UI:          http://localhost:9090"
+	@echo "Alertmanager UI:        http://localhost:9093"
+	@echo "Redpanda Console:       http://localhost:8088"
+	@echo "------------------------------------------------------------------"
+	@echo "Executive Overview:     http://localhost:3000/d/pulse-executive-overview"
+	@echo "Gateway & Broker Lag:   http://localhost:3000/d/pulse-ingest-broker-lag"
+	@echo "Stream Processor:       http://localhost:3000/d/pulse-stream-processor"
+	@echo "Anomaly Alerts:         http://localhost:3000/d/pulse-anomaly-alerts"
+	@echo "ChronoDB Storage:       http://localhost:3000/d/pulse-chronodb-storage"
+	@echo "=================================================================="
 
 build: proto
 	$(GO) build -o bin/gateway ./cmd/gateway

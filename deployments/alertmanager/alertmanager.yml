@@ -1,0 +1,25 @@
+global:
+  resolve_timeout: 1m
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 5s
+  group_interval: 15s
+  repeat_interval: 1h
+  receiver: 'default-webhook'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical-webhook'
+      repeat_interval: 15m
+
+receivers:
+  - name: 'default-webhook'
+    webhook_configs:
+      - url: 'http://host.docker.internal:8083/api/v1/alerts/webhook'
+        send_resolved: true
+
+  - name: 'critical-webhook'
+    webhook_configs:
+      - url: 'http://host.docker.internal:8083/api/v1/alerts/webhook'
+        send_resolved: true

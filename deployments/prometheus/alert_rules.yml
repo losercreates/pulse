@@ -1,0 +1,56 @@
+groups:
+  - name: pulse_sla_alerts
+    rules:
+      - alert: CriticalIngestionErrorRate
+        expr: (((sum(rate(pulse_ingest_clock_skew_rejected_total[1m])) + sum(rate(pulse_ingest_malformed_payloads_total[1m]))) / (sum(rate(pulse_ingest_records_total[1m])) + 0.001)) * 100) > 0.10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Gateway ingestion error rate exceeds 0.10% SLA threshold"
+          description: "Ingestion error rate is {{ $value | printf \"%.3f\" }}% over the last minute. Check for clock skew, malformed JSON, or NaN values."
+
+      - alert: HighConsumerLag
+        expr: sum by (partition) (pulse_stream_consumer_lag) > 250000
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consumer lag on partition exceeds 5s equivalent throughput (250,000 events)"
+          description: "Consumer lag on partition {{ $labels.partition }} has accumulated {{ $value }} unconsumed events."
+
+      - alert: WatermarkStalled
+        expr: sum by (partition) (rate(pulse_stream_events_processed_total[1m])) > 50 and sum by (partition) (pulse_stream_watermark_lag_seconds) > 15
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Event-time watermark has stopped progressing on partition"
+          description: "Partition {{ $labels.partition }} is consuming active events but watermark lag is {{ $value }}s (> 15s)."
+
+      - alert: AlertCircuitBreakerOpen
+        expr: pulse_alert_circuit_breaker_state == 1
+        for: 10s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Decoupled alert dispatcher circuit breaker has tripped to OPEN"
+          description: "Repeated webhook delivery failures have tripped the circuit breaker to OPEN. Alerts are buffering and routing to dead-letter sink."
+
+      - alert: CanaryLatencySLABreached
+        expr: pulse_canary_p95_latency_ms > 2000
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Synthetic canary end-to-end latency exceeds 2.0s SLA"
+          description: "End-to-end canary ingestion-to-query latency p95 is {{ $value }}ms (SLA is < 2000ms)."
+
+      - alert: StorageQueryLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(pulse_storage_query_latency_seconds_bucket[1m])) by (le)) > 0.005
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ChronoDB p95 query latency exceeds 5.0ms"
+          description: "Sub-millisecond query performance has degraded to {{ $value | printf \"%.3f\" }}s."

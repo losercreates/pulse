@@ -116,6 +116,40 @@ Milestone 005 implements a carrier-grade fleet load simulator and chaos stress t
 
 ---
 
+## Milestone 006: Unified Multi-Service Observability & Executive Grafana Dashboards
+
+Milestone 006 delivers full-stack real-time visibility across all 5 platform subsystems using Prometheus, Alertmanager, and declarative Grafana dashboards:
+1. **Centralized Platform Prometheus Scraping**:
+   - Polling interval: 5 seconds across 5 core targets:
+     - Ingestion Gateway (`host.docker.internal:8080`)
+     - Stream Processor (`host.docker.internal:8081`)
+     - Decoupled Alert Dispatcher (`host.docker.internal:8083`)
+     - ChronoDB Storage Sink & Query Service (`host.docker.internal:8084`)
+     - Redpanda Messaging Broker (`redpanda:9644/public_metrics`)
+2. **Automated SLA Alerting Rules (`alert_rules.yml`)**:
+   - `CriticalIngestionErrorRate`: Triggers if Gateway rejection rate exceeds $0.10\%$ over 1 minute.
+   - `HighConsumerLag`: Triggers if consumer group lag exceeds 250,000 unconsumed events ($> 5\text{s}$ throughput equivalent) on any partition for 30 seconds.
+   - `WatermarkStalled`: Triggers if active ingestion continues ($> 50\text{ ev/s}$) while watermark lag exceeds 15 seconds for 30 seconds.
+   - `AlertCircuitBreakerOpen`: Triggers when alert webhook circuit breaker trips to `OPEN` for 10 seconds.
+   - `CanaryLatencySLABreached`: Triggers if synthetic canary end-to-end latency p95 exceeds $2000\text{ms}$ over 1 minute.
+   - `StorageQueryLatencyHigh`: Triggers if ChronoDB analytical query p95 latency degrades beyond $5.0\text{ms}$ over 1 minute.
+3. **Alertmanager Notification Routing (`alertmanager.yml`)**:
+   - Grouping intervals: `group_wait: 5s`, `group_interval: 15s`, `repeat_interval: 1h`.
+   - Dedicated webhook routing for critical incidents with 15-minute escalation repeats.
+4. **5 Declarative Grafana Dashboards (`deployments/grafana/dashboards/`)**:
+   - **Executive Pipeline Overview** (`pulse-executive-overview`): High-level throughput stat, canary p95 gauge ($< 2.0\text{s}$ SLA gate), error rate, active incidents, and end-to-end volume.
+   - **Ingestion Gateway & Redpanda Partition Lag** (`pulse-ingest-broker-lag`): Protocol distribution (gRPC vs HTTP), gateway latency heatmap, stacked 12-partition lag, and rejection reasons.
+   - **Stream Processor & Watermarking Health** (`pulse-stream-processor`): Per-partition watermark lag, priority queue min-heap depth, partition consumption rates, and late-data drop rates.
+   - **Anomaly Detection & Decoupled Alerting** (`pulse-anomaly-alerts`): Real-time $k$-sigma anomaly rates by severity, circuit breaker state timeline, webhook dispatch latency percentiles, and retry rates.
+   - **ChronoDB Storage & Analytical Query Engine** (`pulse-chronodb-storage`): Aggregate write rates, batch upsert latency percentiles (p50, p95, p99), query latency heatmap, and 16-shard balance stats.
+5. **Single-Command Developer Workflow**:
+   - `make obs-up`: Starts Prometheus, Grafana, Alertmanager, and Redpanda with persistent volumes and health probes.
+   - `make obs-down`: Gracefully stops the observability stack.
+   - `make dashboards`: Prints direct URLs to all dashboards and service UIs.
+   - `./scripts/verify_observability.sh`: Automated test harness validating configs, alert rules, and dashboard models.
+
+---
+
 ## Verified Benchmark Performance
 
 Running on development hardware (Intel Core i7-1165G7):
@@ -221,7 +255,22 @@ curl -s http://localhost:8084/metrics | grep pulse_storage
 ./bin/simulator --rate 50000 --devices 1000 --duration 30s --json
 ```
 
-### 6. Run Test Suites & Benchmarks
+### 6. View Observability Stack & Grafana Dashboards
+```bash
+# Start Prometheus, Grafana, and Alertmanager
+make obs-up
+
+# Print direct URLs for all dashboards
+make dashboards
+
+# Run automated observability verification harness
+./scripts/verify_observability.sh
+
+# Stop observability stack
+make obs-down
+```
+
+### 7. Run Test Suites & Benchmarks
 ```bash
 make test
 make bench

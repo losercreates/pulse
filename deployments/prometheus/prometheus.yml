@@ -1,0 +1,50 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+  scrape_timeout: 4s
+
+rule_files:
+  - "/etc/prometheus/alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+
+scrape_configs:
+  - job_name: "pulse-gateway"
+    static_configs:
+      - targets:
+          - "host.docker.internal:8080"
+        labels:
+          service: "gateway"
+
+  - job_name: "pulse-processor"
+    static_configs:
+      - targets:
+          - "host.docker.internal:8081"
+        labels:
+          service: "processor"
+
+  - job_name: "pulse-alertd"
+    static_configs:
+      - targets:
+          - "host.docker.internal:8083"
+        labels:
+          service: "alertd"
+
+  - job_name: "pulse-chronod"
+    static_configs:
+      - targets:
+          - "host.docker.internal:8084"
+        labels:
+          service: "chronod"
+
+  - job_name: "pulse-redpanda"
+    metrics_path: "/public_metrics"
+    static_configs:
+      - targets:
+          - "redpanda:9644"
+        labels:
+          service: "redpanda"

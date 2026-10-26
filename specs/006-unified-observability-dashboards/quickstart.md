@@ -2,7 +2,7 @@
 
 **Feature**: `006-unified-observability-dashboards`  
 **Date**: 2026-10-26  
-**Status**: Ready for Implementation  
+**Status**: Completed  
 
 ---
 
@@ -23,7 +23,7 @@ Start the unified Docker Compose stack containing Redpanda, Prometheus, Grafana,
 
 ```bash
 # Start all infrastructure daemons
-make up
+make obs-up
 # or
 docker compose -f deployments/docker-compose.yml up -d
 ```
@@ -39,9 +39,24 @@ docker compose -f deployments/docker-compose.yml ps
 - `pulse-grafana`: healthy (port `3000`)
 - `pulse-alertmanager`: healthy (port `9093`)
 
+To view dashboard links at any time:
+```bash
+make dashboards
+```
+
 ---
 
-## 3. Start Core Platform Daemons
+## 3. Automated Configuration & Rules Verification
+
+Run the built-in observability verification harness to validate all scrape configurations, SLA alert rules, and Grafana dashboard JSON models:
+
+```bash
+./scripts/verify_observability.sh
+```
+
+---
+
+## 4. Start Core Platform Daemons
 
 In separate terminal tabs or in the background, start the 4 platform services:
 
@@ -54,7 +69,7 @@ In separate terminal tabs or in the background, start the 4 platform services:
 
 ---
 
-## 4. Validation Scenarios
+## 5. Validation Scenarios
 
 ### Scenario A: Verify Prometheus Scrape Targets
 
@@ -78,13 +93,13 @@ curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job:
 Open your browser to Grafana at [http://localhost:3000](http://localhost:3000).
 
 *Expected Verification*:
-- No login required (or login with `admin`/`admin`).
+- Anonymous admin access enabled (no login credentials required, or login with `admin`/`admin`).
 - Navigate to **Dashboards** → Folder **Pulse Platform**:
-  1. `Pulse Executive Pipeline Overview`
-  2. `Ingestion Gateway & Redpanda Partition Lag`
-  3. `Stream Processor & Watermarking Health`
-  4. `Anomaly Detection & Decoupled Alerting`
-  5. `ChronoDB Storage & Analytical Query Engine`
+  1. `Pulse Executive Pipeline Overview` (`pulse-executive-overview`)
+  2. `Ingestion Gateway & Redpanda Partition Lag` (`pulse-ingest-broker-lag`)
+  3. `Stream Processor & Watermarking Health` (`pulse-stream-processor`)
+  4. `Anomaly Detection & Decoupled Alerting` (`pulse-anomaly-alerts`)
+  5. `ChronoDB Storage & Analytical Query Engine` (`pulse-chronodb-storage`)
 - All panels load without datasource errors.
 
 ---
@@ -114,7 +129,13 @@ Query Prometheus alert rules:
 curl -s http://localhost:9090/api/v1/rules | jq '.data.groups[].rules[] | {alert: .name, state: .state}'
 ```
 
-Test alert evaluation by intentionally tripping a condition (e.g. stopping `chronod` to induce consumer lag or tripping the circuit breaker).
+The 6 SLA rules enforced in `deployments/prometheus/alert_rules.yml`:
+1. `CriticalIngestionErrorRate`: Gateway error rate $> 0.10\%$ over 1m
+2. `HighConsumerLag`: Consumer lag $> 250,000$ events over 30s
+3. `WatermarkStalled`: Watermark lag $> 15\text{s}$ with active traffic over 30s
+4. `AlertCircuitBreakerOpen`: Alert dispatcher circuit breaker trips to `OPEN` for 10s
+5. `CanaryLatencySLABreached`: Synthetic canary p95 latency $> 2000\text{ms}$ over 1m
+6. `StorageQueryLatencyHigh`: ChronoDB p95 query latency $> 5.0\text{ms}$ over 1m
 
 Check Alertmanager at [http://localhost:9093](http://localhost:9093):
 - Alert transitions from `pending` to `firing` after configured `for:` duration.
