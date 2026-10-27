@@ -18,8 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
-          check-latest: true
+          go-version: 'stable'
           cache: true
 
       - name: Install Protoc Compiler
@@ -66,8 +65,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
-          check-latest: true
+          go-version: 'stable'
           cache: true
 
       - name: Verify Go Module Hashes
@@ -89,8 +87,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
-          check-latest: true
+          go-version: 'stable'
           cache: true
 
       - name: Verify Observability Stack & Dashboard Schemas
@@ -109,8 +106,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
-          check-latest: true
+          go-version: 'stable'
           cache: true
 
       - name: Set up Helm
@@ -146,8 +142,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
-          check-latest: true
+          go-version: 'stable'
           cache: true
 
       - name: Install Protoc Compiler
