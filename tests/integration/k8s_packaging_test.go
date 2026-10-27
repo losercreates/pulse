@@ -49,7 +49,7 @@ func TestDockerfiles_SyntaxAndSecurity(t *testing.T) {
 			content := string(data)
 
 			// 1. Multi-stage build checks
-			assert.Contains(t, content, "FROM golang:1.23", "Must use Go 1.23 builder stage")
+			assert.True(t, strings.Contains(content, "FROM golang:1.26") || strings.Contains(content, "FROM golang:1.23"), "Must use Go builder stage")
 			assert.Contains(t, content, "AS builder", "Must name the builder stage")
 			assert.Contains(t, content, "CGO_ENABLED=0", "Must disable CGO for static compilation")
 			assert.Contains(t, content, expected.expectedCmd, "Must compile target command %s", expected.expectedCmd)

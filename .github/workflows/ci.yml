@@ -52,13 +52,92 @@ jobs:
       - name: Run Ingestion Benchmark
         run: go test -v -bench=. -benchtime=1s -benchmem ./tests/bench/...
 
-      - name: Build Ingestion Gateway Binary
+      - name: Build Microservice Binaries
         run: make build
+
+  security-audit:
+    name: Security & Vulnerability Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+
+      - name: Verify Go Module Hashes
+        run: go mod verify
+
+      - name: Run Go Vulnerability Scanner (govulncheck)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  observability:
+    name: Observability & Dashboard Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+
+      - name: Verify Observability Stack & Dashboard Schemas
+        run: |
+          chmod +x ./scripts/verify_observability.sh
+          ./scripts/verify_observability.sh
+
+  packaging-k8s:
+    name: Container Packaging & Helm Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.17.0'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Helm Lint & Template Dry-Run
+        run: |
+          helm lint deployments/helm/pulse
+          helm template pulse deployments/helm/pulse --dry-run
+
+      - name: Build All Distroless Docker Images
+        run: make docker-build
+
+      - name: Run Packaging Verification Harness
+        run: |
+          chmod +x ./scripts/verify_packaging.sh
+          ./scripts/verify_packaging.sh
 
   e2e-pipeline:
     name: Full Multi-Service Pipeline E2E Test
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, packaging-k8s]
 
     steps:
       - name: Check out repository
