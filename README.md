@@ -150,6 +150,33 @@ Milestone 006 delivers full-stack real-time visibility across all 5 platform sub
 
 ---
 
+## Milestone 007: Production Container Packaging & Kubernetes Deployment
+
+Milestone 007 delivers cloud-native containerization and enterprise Kubernetes orchestration for the entire Pulse platform:
+1. **Multi-Stage Minimal Distroless Dockerfiles (`deployments/docker/`)**:
+   - Compiles static Go binaries with `CGO_ENABLED=0` and stripped debug symbols (`-s -w`).
+   - Hardened `gcr.io/distroless/static-debian12:nonroot` runtime executing strictly as non-root (`USER 65532:65532`).
+   - Uncompressed image footprints $< 35\text{MB}$ with zero shell or package manager vulnerabilities.
+   - Images provided for: `gateway`, `processor`, `alertd`, `chronod`, and `simulator`.
+2. **Unified Production Helm Chart (`deployments/helm/pulse/`)**:
+   - Declarative Helm v3 release managing Deployments, Services, ConfigMaps, Secrets, HPAs, and PDB.
+   - Standardized recommended labels (`app.kubernetes.io/name`, `app.kubernetes.io/component`, `helm.sh/chart`).
+   - Dual-port service routing: Gateway (HTTP `:8080`, gRPC `:50051`) and ChronoDB (HTTP `:8084`, gRPC `:50054`).
+   - Robust liveness and readiness HTTP probes on `/healthz` ensuring zero traffic routed to unready pods.
+3. **Resilient Autoscaling & Partition Concurrency Invariant**:
+   - Gateway Horizontal Pod Autoscaler scaling 2 to 10 replicas on CPU utilization ($> 75\%$).
+   - Stream Processor Horizontal Pod Autoscaler scaling 1 to 12 replicas on Redpanda consumer lag and CPU, strictly capped at 12 replicas to guarantee Constitution Principle I (exactly one worker per partition without idle pod waste).
+   - Pod Disruption Budget (`minAvailable: 1`) protecting cluster node drains and voluntary disruptions.
+4. **Graceful Draining & Synthetic Load Verification**:
+   - `terminationGracePeriodSeconds: 30` across all Deployments guaranteeing zero dropped requests and full offset commit flushes before pod exit.
+   - On-demand in-cluster fleet load testing via the `pulse-simulator` Kubernetes Job.
+5. **Developer & CI Workflow**:
+   - `make docker-build`: Builds all 5 distroless container images.
+   - `make helm-lint` & `make helm-template`: Lints and validates rendered Kubernetes manifests.
+   - `make k8s-verify`: Executes the automated packaging verification harness.
+
+---
+
 ## Verified Benchmark Performance
 
 Running on development hardware (Intel Core i7-1165G7):

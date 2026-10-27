@@ -1,0 +1,14 @@
+apiVersion: v2
+name: pulse
+description: Production Helm chart for Pulse real-time telemetry streaming and processing platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - telemetry
+  - streaming
+  - redpanda
+  - watermarking
+  - chronodb
+maintainers:
+  - name: Pulse Platform Engineering

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "pulse.fullname" . }}-config
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+data:
+  PULSE_KAFKA_BROKERS: {{ .Values.global.redpanda.brokers | quote }}
+  PULSE_TOPIC_RAW: {{ .Values.global.redpanda.topics.raw | quote }}
+  PULSE_TOPIC_AGGREGATES: {{ .Values.global.redpanda.topics.aggregates | quote }}
+  PULSE_TOPIC_LATE: {{ .Values.global.redpanda.topics.late | quote }}
+  PULSE_TOPIC_ALERTS: {{ .Values.global.redpanda.topics.alerts | quote }}
+  PULSE_TOPIC_ALERTS_DEADLETTER: {{ .Values.global.redpanda.topics.deadletter | quote }}
+  GATEWAY_HTTP_PORT: {{ .Values.gateway.service.httpPort | quote }}
+  GATEWAY_GRPC_PORT: {{ .Values.gateway.service.grpcPort | quote }}
+  PROCESSOR_HTTP_PORT: {{ .Values.processor.service.httpPort | quote }}
+  ALERTD_HTTP_PORT: {{ .Values.alertd.service.httpPort | quote }}
+  CHRONOD_HTTP_PORT: {{ .Values.chronod.service.httpPort | quote }}
+  CHRONOD_GRPC_PORT: {{ .Values.chronod.service.grpcPort | quote }}
+  CHRONOD_SHARD_COUNT: {{ .Values.chronod.shardCount | quote }}

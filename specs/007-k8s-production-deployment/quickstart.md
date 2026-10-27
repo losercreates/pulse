@@ -2,7 +2,7 @@
 
 **Feature**: `007-k8s-production-deployment`  
 **Date**: 2026-10-27  
-**Status**: Ready for Implementation  
+**Status**: Completed  
 
 ---
 
@@ -18,7 +18,19 @@ go version
 
 ---
 
-## 2. Validation Scenarios
+## 2. Automated Packaging & Manifest Verification Harness
+
+Run the automated packaging verification harness:
+
+```bash
+./scripts/verify_packaging.sh
+# or
+make k8s-verify
+```
+
+---
+
+## 3. Validation Scenarios
 
 ### Scenario A: Build Multi-Stage Distroless Container Images
 
@@ -47,8 +59,8 @@ docker images | grep pulse-
 Lint the Helm chart and render template manifests:
 
 ```bash
-helm lint deployments/helm/pulse
-helm template pulse deployments/helm/pulse > /tmp/pulse-rendered.yaml
+make helm-lint
+make helm-template > /tmp/pulse-rendered.yaml
 ```
 
 *Expected Verification*:

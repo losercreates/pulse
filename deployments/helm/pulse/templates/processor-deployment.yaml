@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pulse.fullname" . }}-processor
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: processor
+spec:
+  {{- if not .Values.processor.autoscaling.enabled }}
+  replicas: {{ .Values.processor.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "pulse.selectorLabels" (dict "context" . "component" "processor") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pulse.selectorLabels" (dict "context" . "component" "processor") | nindent 8 }}
+        app.kubernetes.io/component: processor
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.processor.terminationGracePeriodSeconds | default 30 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: processor
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.processor.image.repository }}:{{ .Values.processor.image.tag | default .Values.global.tag }}"
+          imagePullPolicy: {{ .Values.processor.image.pullPolicy | default .Values.global.imagePullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: HTTP_PORT
+              value: {{ .Values.processor.service.httpPort | quote }}
+            - name: REDPANDA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_KAFKA_BROKERS
+            - name: STREAM_GROUP_ID
+              value: {{ .Values.processor.consumerGroup | quote }}
+            - name: TOPIC_RAW
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_TOPIC_RAW
+            - name: TOPIC_AGGREGATES
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_TOPIC_AGGREGATES
+            - name: TOPIC_LATE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_TOPIC_LATE
+          ports:
+            - name: http
+              containerPort: {{ .Values.processor.service.httpPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.processor.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}

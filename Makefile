@@ -1,4 +1,4 @@
-.PHONY: proto up down obs-up obs-down dashboards test bench build run clean e2e sim
+.PHONY: proto up down obs-up obs-down dashboards test bench build run clean e2e sim docker-build helm-lint helm-template k8s-verify
 
 GO ?= go
 PROTOC ?= protoc
@@ -64,6 +64,22 @@ run: build
 
 sim: build
 	./bin/simulator
+
+docker-build:
+	docker build -t pulse-gateway:latest -f deployments/docker/Dockerfile.gateway .
+	docker build -t pulse-processor:latest -f deployments/docker/Dockerfile.processor .
+	docker build -t pulse-alertd:latest -f deployments/docker/Dockerfile.alertd .
+	docker build -t pulse-chronod:latest -f deployments/docker/Dockerfile.chronod .
+	docker build -t pulse-simulator:latest -f deployments/docker/Dockerfile.simulator .
+
+helm-lint:
+	helm lint deployments/helm/pulse
+
+helm-template:
+	helm template pulse deployments/helm/pulse
+
+k8s-verify:
+	./scripts/verify_packaging.sh
 
 test:
 	$(GO) test -v -race ./internal/...

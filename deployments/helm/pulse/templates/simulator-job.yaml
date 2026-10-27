@@ -1,0 +1,45 @@
+{{- if .Values.simulator.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "pulse.fullname" . }}-simulator-{{ now | date "20060102-150405" }}
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: simulator
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        {{- include "pulse.selectorLabels" (dict "context" . "component" "simulator") | nindent 8 }}
+        app.kubernetes.io/component: simulator
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+      containers:
+        - name: simulator
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.simulator.image.repository }}:{{ .Values.simulator.image.tag | default .Values.global.tag }}"
+          imagePullPolicy: {{ .Values.simulator.image.pullPolicy | default .Values.global.imagePullPolicy }}
+          args:
+            - "--rate={{ .Values.simulator.targetRate | default 25000 }}"
+            - "--devices={{ .Values.simulator.devices | default 500 }}"
+            - "--duration={{ .Values.simulator.duration | default "30s" }}"
+            - "--profile={{ .Values.simulator.profile | default "mixed" }}"
+            - "--transport={{ .Values.simulator.transport | default "grpc" }}"
+            - "--gateway-grpc={{ include "pulse.fullname" . }}-gateway:{{ .Values.gateway.service.grpcPort }}"
+            - "--gateway-http=http://{{ include "pulse.fullname" . }}-gateway:{{ .Values.gateway.service.httpPort }}"
+            - "--chrono-query=http://{{ include "pulse.fullname" . }}-chronod:{{ .Values.chronod.service.httpPort }}"
+            - "--workers={{ .Values.simulator.workers | default 4 }}"
+            - "--json"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 2000m
+              memory: 1Gi
+{{- end }}

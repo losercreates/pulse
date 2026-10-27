@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pulse.fullname" . }}-alertd
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: alertd
+spec:
+  replicas: {{ .Values.alertd.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "pulse.selectorLabels" (dict "context" . "component" "alertd") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pulse.selectorLabels" (dict "context" . "component" "alertd") | nindent 8 }}
+        app.kubernetes.io/component: alertd
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.alertd.terminationGracePeriodSeconds | default 30 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: alertd
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.alertd.image.repository }}:{{ .Values.alertd.image.tag | default .Values.global.tag }}"
+          imagePullPolicy: {{ .Values.alertd.image.pullPolicy | default .Values.global.imagePullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: HTTP_PORT
+              value: {{ .Values.alertd.service.httpPort | quote }}
+            - name: REDPANDA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_KAFKA_BROKERS
+            - name: ALERT_GROUP_ID
+              value: {{ .Values.alertd.consumerGroup | quote }}
+            - name: TOPIC_ALERTS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_TOPIC_ALERTS
+            - name: TOPIC_ALERTS_DEADLETTER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_TOPIC_ALERTS_DEADLETTER
+            - name: ALERT_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "pulse.fullname" . }}-secrets
+                  key: PULSE_ALERT_WEBHOOK_URL
+          ports:
+            - name: http
+              containerPort: {{ .Values.alertd.service.httpPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.alertd.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}

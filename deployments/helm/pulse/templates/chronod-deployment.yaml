@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pulse.fullname" . }}-chronod
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chronod
+spec:
+  replicas: {{ .Values.chronod.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "pulse.selectorLabels" (dict "context" . "component" "chronod") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pulse.selectorLabels" (dict "context" . "component" "chronod") | nindent 8 }}
+        app.kubernetes.io/component: chronod
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.chronod.terminationGracePeriodSeconds | default 30 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: chronod
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.chronod.image.repository }}:{{ .Values.chronod.image.tag | default .Values.global.tag }}"
+          imagePullPolicy: {{ .Values.chronod.image.pullPolicy | default .Values.global.imagePullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: STORAGE_HTTP_PORT
+              value: {{ .Values.chronod.service.httpPort | quote }}
+            - name: STORAGE_GRPC_PORT
+              value: {{ .Values.chronod.service.grpcPort | quote }}
+            - name: REDPANDA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_KAFKA_BROKERS
+            - name: STORAGE_GROUP_ID
+              value: {{ .Values.chronod.consumerGroup | quote }}
+            - name: STORAGE_TOPIC_AGGREGATES
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_TOPIC_AGGREGATES
+            - name: STORAGE_SHARDS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: CHRONOD_SHARD_COUNT
+          ports:
+            - name: http
+              containerPort: {{ .Values.chronod.service.httpPort }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.chronod.service.grpcPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.chronod.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}

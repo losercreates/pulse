@@ -10,9 +10,9 @@
 
 **Purpose**: Scaffolding for Docker packaging, Helm chart directories, and base metadata.
 
-- [ ] T001 [P] Create directory scaffolding for Dockerfiles in `deployments/docker/` and Helm chart in `deployments/helm/pulse/templates/`
-- [ ] T002 [P] Create Helm Chart metadata in `deployments/helm/pulse/Chart.yaml`
-- [ ] T003 [P] Implement standardized Helm template helpers for names, labels, and selector labels in `deployments/helm/pulse/templates/_helpers.tpl`
+- [X] T001 [P] Create directory scaffolding for Dockerfiles in `deployments/docker/` and Helm chart in `deployments/helm/pulse/templates/`
+- [X] T002 [P] Create Helm Chart metadata in `deployments/helm/pulse/Chart.yaml`
+- [X] T003 [P] Implement standardized Helm template helpers for names, labels, and selector labels in `deployments/helm/pulse/templates/_helpers.tpl`
 
 ---
 
@@ -22,9 +22,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 [P] Implement default release configuration values defining microservice images, ports, and resource quotas in `deployments/helm/pulse/values.yaml`
-- [ ] T005 [P] Implement shared Kubernetes ConfigMap template defining Redpanda broker endpoints and topic parameters in `deployments/helm/pulse/templates/configmap.yaml`
-- [ ] T006 [P] Implement Kubernetes Secret template managing alert webhook URLs and credentials in `deployments/helm/pulse/templates/secret.yaml`
+- [X] T004 [P] Implement default release configuration values defining microservice images, ports, and resource quotas in `deployments/helm/pulse/values.yaml`
+- [X] T005 [P] Implement shared Kubernetes ConfigMap template defining Redpanda broker endpoints and topic parameters in `deployments/helm/pulse/templates/configmap.yaml`
+- [X] T006 [P] Implement Kubernetes Secret template managing alert webhook URLs and credentials in `deployments/helm/pulse/templates/secret.yaml`
 
 **Checkpoint**: Core Helm packaging foundation and configuration schemas are complete.
 
@@ -38,15 +38,15 @@
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Create unit tests validating Dockerfile multi-stage syntax, non-root user definitions, and entrypoints in `tests/integration/k8s_packaging_test.go`
+- [X] T007 [P] [US1] Create unit tests validating Dockerfile multi-stage syntax, non-root user definitions, and entrypoints in `tests/integration/k8s_packaging_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Implement multi-stage distroless Dockerfile for Ingestion Gateway exposing ports `8080/TCP` and `50051/TCP` in `deployments/docker/Dockerfile.gateway`
-- [ ] T009 [P] [US1] Implement multi-stage distroless Dockerfile for Stream Processing Core exposing port `8081/TCP` in `deployments/docker/Dockerfile.processor`
-- [ ] T010 [P] [US1] Implement multi-stage distroless Dockerfile for Decoupled Alert Dispatcher exposing port `8083/TCP` in `deployments/docker/Dockerfile.alertd`
-- [ ] T011 [P] [US1] Implement multi-stage distroless Dockerfile for ChronoDB Storage Sink exposing ports `8084/TCP` and `50054/TCP` in `deployments/docker/Dockerfile.chronod`
-- [ ] T012 [P] [US1] Implement multi-stage distroless Dockerfile for Fleet Load Simulator in `deployments/docker/Dockerfile.simulator`
+- [X] T008 [P] [US1] Implement multi-stage distroless Dockerfile for Ingestion Gateway exposing ports `8080/TCP` and `50051/TCP` in `deployments/docker/Dockerfile.gateway`
+- [X] T009 [P] [US1] Implement multi-stage distroless Dockerfile for Stream Processing Core exposing port `8081/TCP` in `deployments/docker/Dockerfile.processor`
+- [X] T010 [P] [US1] Implement multi-stage distroless Dockerfile for Decoupled Alert Dispatcher exposing port `8083/TCP` in `deployments/docker/Dockerfile.alertd`
+- [X] T011 [P] [US1] Implement multi-stage distroless Dockerfile for ChronoDB Storage Sink exposing ports `8084/TCP` and `50054/TCP` in `deployments/docker/Dockerfile.chronod`
+- [X] T012 [P] [US1] Implement multi-stage distroless Dockerfile for Fleet Load Simulator in `deployments/docker/Dockerfile.simulator`
 
 **Checkpoint**: All 5 container images buildable, unprivileged, and ready for deployment.
 
@@ -60,14 +60,14 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Create integration tests validating Helm template dry-run rendering and Kubernetes resource definitions in `tests/integration/k8s_packaging_test.go`
+- [X] T013 [P] [US2] Create integration tests validating Helm template dry-run rendering and Kubernetes resource definitions in `tests/integration/k8s_packaging_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T014 [P] [US2] Implement Gateway Kubernetes Deployment and Service templates (REST `:8080`, gRPC `:50051`) with `/healthz` probes and resource quotas in `deployments/helm/pulse/templates/gateway-deployment.yaml` and `deployments/helm/pulse/templates/gateway-service.yaml`
-- [ ] T015 [P] [US2] Implement Stream Processor Kubernetes Deployment and Service templates (HTTP `:8081`) with `/healthz` probes and resource quotas in `deployments/helm/pulse/templates/processor-deployment.yaml` and `deployments/helm/pulse/templates/processor-service.yaml`
-- [ ] T016 [P] [US2] Implement Alert Dispatcher Kubernetes Deployment and Service templates (HTTP `:8083`) with `/healthz` probes and resource quotas in `deployments/helm/pulse/templates/alertd-deployment.yaml` and `deployments/helm/pulse/templates/alertd-service.yaml`
-- [ ] T017 [P] [US2] Implement ChronoDB Kubernetes Deployment and Service templates (REST `:8084`, gRPC `:50054`) with `/healthz` probes and resource quotas in `deployments/helm/pulse/templates/chronod-deployment.yaml` and `deployments/helm/pulse/templates/chronod-service.yaml`
+- [X] T014 [P] [US2] Implement Gateway Kubernetes Deployment and Service templates (REST `:8080`, gRPC `:50051`) with `/healthz` probes and resource quotas in `deployments/helm/pulse/templates/gateway-deployment.yaml` and `deployments/helm/pulse/templates/gateway-service.yaml`
+- [X] T015 [P] [US2] Implement Stream Processor Kubernetes Deployment and Service templates (HTTP `:8081`) with `/healthz` probes and resource quotas in `deployments/helm/pulse/templates/processor-deployment.yaml` and `deployments/helm/pulse/templates/processor-service.yaml`
+- [X] T016 [P] [US2] Implement Alert Dispatcher Kubernetes Deployment and Service templates (HTTP `:8083`) with `/healthz` probes and resource quotas in `deployments/helm/pulse/templates/alertd-deployment.yaml` and `deployments/helm/pulse/templates/alertd-service.yaml`
+- [X] T017 [P] [US2] Implement ChronoDB Kubernetes Deployment and Service templates (REST `:8084`, gRPC `:50054`) with `/healthz` probes and resource quotas in `deployments/helm/pulse/templates/chronod-deployment.yaml` and `deployments/helm/pulse/templates/chronod-service.yaml`
 
 **Checkpoint**: Complete Kubernetes multi-service deployment manifests functional.
 
@@ -81,13 +81,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T018 [P] [US3] Create integration tests asserting HPA replica bounds and Stream Processor 12-partition ceiling in `tests/integration/k8s_packaging_test.go`
+- [X] T018 [P] [US3] Create integration tests asserting HPA replica bounds and Stream Processor 12-partition ceiling in `tests/integration/k8s_packaging_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T019 [US3] Implement Horizontal Pod Autoscaler for Gateway scaling 2–10 replicas on CPU utilization ($75\%$) in `deployments/helm/pulse/templates/gateway-hpa.yaml`
-- [ ] T020 [US3] Implement Horizontal Pod Autoscaler for Stream Processor scaling 1–12 replicas on consumer lag and CPU in `deployments/helm/pulse/templates/processor-hpa.yaml`
-- [ ] T021 [P] [US3] Implement Pod Disruption Budget guaranteeing minimum replica availability during voluntary disruptions in `deployments/helm/pulse/templates/pdb.yaml`
+- [X] T019 [US3] Implement Horizontal Pod Autoscaler for Gateway scaling 2–10 replicas on CPU utilization ($75\%$) in `deployments/helm/pulse/templates/gateway-hpa.yaml`
+- [X] T020 [US3] Implement Horizontal Pod Autoscaler for Stream Processor scaling 1–12 replicas on consumer lag and CPU in `deployments/helm/pulse/templates/processor-hpa.yaml`
+- [X] T021 [P] [US3] Implement Pod Disruption Budget guaranteeing minimum replica availability during voluntary disruptions in `deployments/helm/pulse/templates/pdb.yaml`
 
 **Checkpoint**: Autoscaling policies and high-availability disruption budgets operational.
 
@@ -101,8 +101,8 @@
 
 ### Implementation for User Story 4
 
-- [ ] T022 [US4] Configure `terminationGracePeriodSeconds: 30` across all microservice Deployment templates in `deployments/helm/pulse/templates/*-deployment.yaml`
-- [ ] T023 [P] [US4] Implement Kubernetes Job template for executing on-demand simulator fleet load tests in `deployments/helm/pulse/templates/simulator-job.yaml`
+- [X] T022 [US4] Configure `terminationGracePeriodSeconds: 30` across all microservice Deployment templates in `deployments/helm/pulse/templates/*-deployment.yaml`
+- [X] T023 [P] [US4] Implement Kubernetes Job template for executing on-demand simulator fleet load tests in `deployments/helm/pulse/templates/simulator-job.yaml`
 
 **Checkpoint**: Safe shutdown lifecycle and synthetic load testing Job configured.
 
@@ -112,9 +112,9 @@
 
 **Purpose**: Build automation, packaging validation scripts, and comprehensive documentation.
 
-- [ ] T024 [P] Update `Makefile` with targets `docker-build`, `helm-lint`, `helm-template`, and `k8s-verify` in `Makefile`
-- [ ] T025 [P] Implement end-to-end container packaging and Helm template verification script in `scripts/verify_packaging.sh`
-- [ ] T026 [P] Update `README.md` and `specs/007-k8s-production-deployment/quickstart.md` with Kubernetes deployment guides and Helm values documentation
+- [X] T024 [P] Update `Makefile` with targets `docker-build`, `helm-lint`, `helm-template`, and `k8s-verify` in `Makefile`
+- [X] T025 [P] Implement end-to-end container packaging and Helm template verification script in `scripts/verify_packaging.sh`
+- [X] T026 [P] Update `README.md` and `specs/007-k8s-production-deployment/quickstart.md` with Kubernetes deployment guides and Helm values documentation
 
 ---
 

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pulse.fullname" . }}-alertd
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: alertd
+spec:
+  type: {{ .Values.alertd.service.type | default "ClusterIP" }}
+  ports:
+    - name: http
+      port: {{ .Values.alertd.service.httpPort }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "pulse.selectorLabels" (dict "context" . "component" "alertd") | nindent 4 }}

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pulse.fullname" . }}-processor
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: processor
+spec:
+  type: {{ .Values.processor.service.type | default "ClusterIP" }}
+  ports:
+    - name: http
+      port: {{ .Values.processor.service.httpPort }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "pulse.selectorLabels" (dict "context" . "component" "processor") | nindent 4 }}
