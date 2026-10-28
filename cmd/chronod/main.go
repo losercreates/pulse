@@ -30,8 +30,25 @@ func main() {
 	m := metrics.New(reg)
 	m.ActiveShardsGauge.Set(float64(cfg.NumShards))
 
-	// 1. Initialize Sharded Storage Engine
-	eng := engine.NewShardedMemoryEngine(cfg.NumShards)
+	// 1. Initialize Storage Engine
+	var eng engine.ChronoEngine
+	if cfg.DataDir != "" {
+		log.Printf("Initializing durable LSM storage engine at %s (%d shards)...", cfg.DataDir, cfg.NumShards)
+		durableEng, err := engine.NewDurableEngine(engine.DurableConfig{
+			DataDir:            cfg.DataDir,
+			NumShards:          cfg.NumShards,
+			MemtableLimit:      5000,
+			RetentionTTL:       time.Duration(cfg.RetentionDays) * 24 * time.Hour,
+			CompactionInterval: cfg.CompactionInterval,
+		})
+		if err != nil {
+			log.Fatalf("Failed to initialize durable storage engine: %v", err)
+		}
+		eng = durableEng
+	} else {
+		log.Printf("Initializing in-memory storage engine (%d shards)...", cfg.NumShards)
+		eng = engine.NewShardedMemoryEngine(cfg.NumShards)
+	}
 	defer eng.Close()
 
 	// 2. Initialize Franz-go Consumer Client
@@ -72,7 +89,7 @@ func main() {
 	}()
 
 	// 5. Initialize and start HTTP Observability & Query Server on port :8084
-	httpServerWrapper := server.NewHTTPServer(eng, m)
+	httpServerWrapper := server.NewHTTPServer(eng, m, cfg.DataDir)
 	httpServer := &http.Server{
 		Addr:         cfg.HTTPPort,
 		Handler:      httpServerWrapper.Handler(),

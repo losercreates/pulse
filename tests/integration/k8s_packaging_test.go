@@ -141,6 +141,8 @@ func TestHelmChart_TemplatesContent(t *testing.T) {
 		"alertd-deployment.yaml",
 		"alertd-service.yaml",
 		"chronod-deployment.yaml",
+		"chronod-statefulset.yaml",
+		"chronod-headless-service.yaml",
 		"chronod-service.yaml",
 		"pdb.yaml",
 		"simulator-job.yaml",
@@ -155,8 +157,8 @@ func TestHelmChart_TemplatesContent(t *testing.T) {
 			content := string(data)
 			assert.NotEmpty(t, strings.TrimSpace(content), "Template %s must not be empty", tmpl)
 
-			// If it's a deployment, assert probes and grace period
-			if strings.HasSuffix(tmpl, "-deployment.yaml") {
+			// If it's a deployment or statefulset, assert probes and grace period
+			if strings.HasSuffix(tmpl, "-deployment.yaml") || strings.HasSuffix(tmpl, "-statefulset.yaml") {
 				assert.Contains(t, content, "terminationGracePeriodSeconds", "%s must specify terminationGracePeriodSeconds", tmpl)
 				assert.Contains(t, content, "livenessProbe", "%s must define livenessProbe", tmpl)
 				assert.Contains(t, content, "readinessProbe", "%s must define readinessProbe", tmpl)
@@ -165,3 +167,55 @@ func TestHelmChart_TemplatesContent(t *testing.T) {
 		})
 	}
 }
+
+func TestHelmChart_ChronoDBStatefulSetAndPVC(t *testing.T) {
+	templatesDir := "../../deployments/helm/pulse/templates"
+
+	// 1. Verify StatefulSet template
+	statefulSetPath := filepath.Join(templatesDir, "chronod-statefulset.yaml")
+	data, err := os.ReadFile(statefulSetPath)
+	require.NoError(t, err)
+
+	content := string(data)
+	assert.Contains(t, content, "kind: StatefulSet")
+	assert.Contains(t, content, "chronod-headless")
+	assert.Contains(t, content, "volumeClaimTemplates")
+	assert.Contains(t, content, "ReadWriteOnce")
+	assert.Contains(t, content, "STORAGE_DATA_DIR")
+	assert.Contains(t, content, "fsGroup: 65532")
+	assert.Contains(t, content, "runAsNonRoot: true")
+
+	// 2. Verify Headless Service template
+	headlessPath := filepath.Join(templatesDir, "chronod-headless-service.yaml")
+	headlessData, err := os.ReadFile(headlessPath)
+	require.NoError(t, err)
+
+	headlessContent := string(headlessData)
+	assert.Contains(t, headlessContent, "clusterIP: None")
+	assert.Contains(t, headlessContent, "chronod-headless")
+
+	// 3. Verify values.yaml persistence configuration
+	valuesPath := "../../deployments/helm/pulse/values.yaml"
+	valData, err := os.ReadFile(valuesPath)
+	require.NoError(t, err)
+
+	var values struct {
+		Chronod struct {
+			Persistence struct {
+				Enabled      bool   `yaml:"enabled"`
+				Size         string `yaml:"size"`
+				AccessMode   string `yaml:"accessMode"`
+				MountPath    string `yaml:"mountPath"`
+				StorageClass string `yaml:"storageClass"`
+			} `yaml:"persistence"`
+		} `yaml:"chronod"`
+	}
+
+	err = yaml.Unmarshal(valData, &values)
+	require.NoError(t, err)
+	assert.True(t, values.Chronod.Persistence.Enabled)
+	assert.Equal(t, "10Gi", values.Chronod.Persistence.Size)
+	assert.Equal(t, "ReadWriteOnce", values.Chronod.Persistence.AccessMode)
+	assert.Equal(t, "/var/lib/pulse/chronodb", values.Chronod.Persistence.MountPath)
+}
+

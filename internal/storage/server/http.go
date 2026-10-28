@@ -3,7 +3,10 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/losercreates/pulse/internal/storage/engine"
@@ -17,14 +20,20 @@ type HTTPServer struct {
 	mux     *http.ServeMux
 	engine  engine.ChronoEngine
 	metrics *metrics.Metrics
+	dataDir string
 }
 
 // NewHTTPServer builds the HTTP router with REST query endpoints and observability probes.
-func NewHTTPServer(eng engine.ChronoEngine, m *metrics.Metrics) *HTTPServer {
+func NewHTTPServer(eng engine.ChronoEngine, m *metrics.Metrics, dataDir ...string) *HTTPServer {
+	dir := ""
+	if len(dataDir) > 0 {
+		dir = dataDir[0]
+	}
 	s := &HTTPServer{
 		mux:     http.NewServeMux(),
 		engine:  eng,
 		metrics: m,
+		dataDir: dir,
 	}
 
 	// Observability
@@ -45,8 +54,47 @@ func (s *HTTPServer) Handler() http.Handler {
 	return s.mux
 }
 
+func (s *HTTPServer) checkDiskHealth() (bool, string) {
+	if s.dataDir == "" {
+		return true, ""
+	}
+
+	// 1. Verify writeability by creating/removing a temporary probe file
+	probeFile := filepath.Join(s.dataDir, ".healthz_probe")
+	if err := os.WriteFile(probeFile, []byte("ok"), 0600); err != nil {
+		return false, "disk write failed: " + err.Error()
+	}
+	_ = os.Remove(probeFile)
+
+	// 2. Validate free disk space > 5%
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(s.dataDir, &stat); err == nil {
+		total := stat.Blocks * uint64(stat.Bsize)
+		free := stat.Bavail * uint64(stat.Bsize)
+		if total > 0 {
+			freePct := float64(free) / float64(total)
+			if freePct < 0.05 {
+				return false, "insufficient disk space (< 5% remaining)"
+			}
+		}
+	}
+
+	return true, ""
+}
+
 func (s *HTTPServer) handleHealthz(w http.ResponseWriter, r *http.Request) {
+	ok, reason := s.checkDiskHealth()
 	w.Header().Set("Content-Type", "application/json")
+	if !ok {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"status": "UNHEALTHY",
+			"error":  reason,
+			"system": "pulse-chronodb-storage",
+		})
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"status": "UP",
@@ -55,7 +103,18 @@ func (s *HTTPServer) handleHealthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *HTTPServer) handleReadyz(w http.ResponseWriter, r *http.Request) {
+	ok, reason := s.checkDiskHealth()
 	w.Header().Set("Content-Type", "application/json")
+	if !ok {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"status": "NOT_READY",
+			"error":  reason,
+			"system": "pulse-chronodb-storage",
+		})
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"status": "READY",

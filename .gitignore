@@ -28,3 +28,7 @@ Thumbs.db
 
 # Spec Kit per-machine state
 .specify/feature.json
+
+# Local runtime data
+data/
+

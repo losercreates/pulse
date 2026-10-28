@@ -10,9 +10,9 @@
 
 **Purpose**: Storage configuration options, error constants, and directory scaffolding.
 
-- [ ] T001 [P] Create durable storage configuration options (`DataDir`, `RetentionDays`, `CompactionInterval`) in `internal/storage/config/config.go`
-- [ ] T002 [P] Implement storage error definitions (`ErrCorruptWAL`, `ErrDiskFull`, `ErrShardLocked`) in `internal/storage/engine/errors.go`
-- [ ] T003 [P] Implement on-disk directory and 16-shard layout scaffolding utility in `internal/storage/engine/layout.go`
+- [X] T001 [P] Create durable storage configuration options (`DataDir`, `RetentionDays`, `CompactionInterval`) in `internal/storage/config/config.go`
+- [X] T002 [P] Implement storage error definitions (`ErrCorruptWAL`, `ErrDiskFull`, `ErrShardLocked`) in `internal/storage/engine/errors.go`
+- [X] T003 [P] Implement on-disk directory and 16-shard layout scaffolding utility in `internal/storage/engine/layout.go`
 
 ---
 
@@ -22,9 +22,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 [P] Implement binary WAL framing encoder/decoder with sentinel magic `0x50554C53` and IEEE CRC32 checksums in `internal/storage/engine/wal_frame.go`
-- [ ] T005 [P] Implement file lock acquisition (`LOCK`) preventing dual-instance access to data directory in `internal/storage/engine/lock.go`
-- [ ] T006 Implement persistent device catalog index serialization and deserialization in `internal/storage/engine/catalog_store.go`
+- [X] T004 [P] Implement binary WAL framing encoder/decoder with sentinel magic `0x50554C53` and IEEE CRC32 checksums in `internal/storage/engine/wal_frame.go`
+- [X] T005 [P] Implement file lock acquisition (`LOCK`) preventing dual-instance access to data directory in `internal/storage/engine/lock.go`
+- [X] T006 Implement persistent device catalog index serialization and deserialization in `internal/storage/engine/catalog_store.go`
 
 **Checkpoint**: Core binary framing, directory locking, and catalog persistence primitives ready.
 
@@ -38,15 +38,15 @@
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Create unit tests for binary WAL frame encoding, decoding, and CRC32 corruption validation in `internal/storage/engine/wal_test.go`
+- [X] T007 [P] [US1] Create unit tests for binary WAL frame encoding, decoding, and CRC32 corruption validation in `internal/storage/engine/wal_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Implement `WALManager` supporting atomic batch append, `fsync` synchronization, and segment rotation in `internal/storage/engine/wal.go`
-- [ ] T009 [P] [US1] Implement immutable SSTable file writer and sparse index trailer builder in `internal/storage/engine/sstable_writer.go`
-- [ ] T010 [P] [US1] Implement SSTable point-lookup and range-scan reader with bloom filters in `internal/storage/engine/sstable_reader.go`
-- [ ] T011 [US1] Implement `DurableEngine` implementing `ChronoEngine` with 16-shard directory routing in `internal/storage/engine/durable.go`
-- [ ] T012 [US1] Integrate `DurableEngine` into `cmd/chronod/main.go` using `STORAGE_DATA_DIR`
+- [X] T008 [P] [US1] Implement `WALManager` supporting atomic batch append, `fsync` synchronization, and segment rotation in `internal/storage/engine/wal.go`
+- [X] T009 [P] [US1] Implement immutable SSTable file writer and sparse index trailer builder in `internal/storage/engine/sstable_writer.go`
+- [X] T010 [P] [US1] Implement SSTable point-lookup and range-scan reader with bloom filters in `internal/storage/engine/sstable_reader.go`
+- [X] T011 [US1] Implement `DurableEngine` implementing `ChronoEngine` with 16-shard directory routing in `internal/storage/engine/durable.go`
+- [X] T012 [US1] Integrate `DurableEngine` into `cmd/chronod/main.go` using `STORAGE_DATA_DIR`
 
 **Checkpoint**: Embedded disk-backed LSM engine with WAL is operational and implements `ChronoEngine`.
 
@@ -60,13 +60,13 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Create integration tests validating ungraceful crash recovery and deduplicated replay in `tests/integration/durable_storage_test.go`
+- [X] T013 [P] [US2] Create integration tests validating ungraceful crash recovery and deduplicated replay in `tests/integration/durable_storage_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] Implement WAL crash recovery replaying uncheckpointed frames and discarding torn trailing writes in `internal/storage/engine/recovery.go`
-- [ ] T015 [US2] Implement idempotent duplicate deduplication across SSTables and active memtable in `internal/storage/engine/durable.go`
-- [ ] T016 [US2] Update storage consumer sink to enforce WAL sync before partition offset commit in `internal/storage/consumer/sink.go`
+- [X] T014 [US2] Implement WAL crash recovery replaying uncheckpointed frames and discarding torn trailing writes in `internal/storage/engine/recovery.go`
+- [X] T015 [US2] Implement idempotent duplicate deduplication across SSTables and active memtable in `internal/storage/engine/durable.go`
+- [X] T016 [US2] Update storage consumer sink to enforce WAL sync before partition offset commit in `internal/storage/consumer/sink.go`
 
 **Checkpoint**: Crash recovery protocol and deduplicated replay verified under synthetic crash injection.
 
@@ -80,14 +80,14 @@
 
 ### Tests for User Story 3
 
-- [ ] T017 [P] [US3] Create Helm integration tests validating StatefulSet and PVC template manifests in `tests/integration/k8s_packaging_test.go`
+- [X] T017 [P] [US3] Create Helm integration tests validating StatefulSet and PVC template manifests in `tests/integration/k8s_packaging_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T018 [P] [US3] Update `deployments/helm/pulse/values.yaml` with `chronod.persistence` parameters (enabled, size, storageClass, retentionDays)
-- [ ] T019 [US3] Implement `chronod-statefulset.yaml` with `volumeClaimTemplates` (`10Gi`, `ReadWriteOnce`) in `deployments/helm/pulse/templates/chronod-statefulset.yaml`
-- [ ] T020 [P] [US3] Implement headless service template for StatefulSet peer resolution in `deployments/helm/pulse/templates/chronod-headless-service.yaml`
-- [ ] T021 [US3] Update ChronoDB HTTP `/healthz` readiness probe to check disk writeability and available space in `internal/storage/server/http.go`
+- [X] T018 [P] [US3] Update `deployments/helm/pulse/values.yaml` with `chronod.persistence` parameters (enabled, size, storageClass, retentionDays)
+- [X] T019 [US3] Implement `chronod-statefulset.yaml` with `volumeClaimTemplates` (`10Gi`, `ReadWriteOnce`) in `deployments/helm/pulse/templates/chronod-statefulset.yaml`
+- [X] T020 [P] [US3] Implement headless service template for StatefulSet peer resolution in `deployments/helm/pulse/templates/chronod-headless-service.yaml`
+- [X] T021 [US3] Update ChronoDB HTTP `/healthz` readiness probe to check disk writeability and available space in `internal/storage/server/http.go`
 
 **Checkpoint**: Kubernetes StatefulSet and PersistentVolumeClaim orchestration operational.
 
@@ -101,12 +101,12 @@
 
 ### Tests for User Story 4
 
-- [ ] T022 [P] [US4] Create unit tests for multi-way SSTable merge compaction and TTL pruning in `internal/storage/engine/compaction_test.go`
+- [X] T022 [P] [US4] Create unit tests for multi-way SSTable merge compaction and TTL pruning in `internal/storage/engine/compaction_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T023 [US4] Implement background multi-way merge compaction and TTL tombstone eviction in `internal/storage/engine/compaction.go`
-- [ ] T024 [US4] Expose Prometheus metrics for disk usage, compaction duration, and recovery duration in `internal/storage/metrics/metrics.go`
+- [X] T023 [US4] Implement background multi-way merge compaction and TTL tombstone eviction in `internal/storage/engine/compaction.go`
+- [X] T024 [US4] Expose Prometheus metrics for disk usage, compaction duration, and recovery duration in `internal/storage/metrics/metrics.go`
 
 **Checkpoint**: Background compaction and TTL retention pruning functional and observable.
 
@@ -116,9 +116,9 @@
 
 **Purpose**: Verification scripts, packaging validation, and documentation updates.
 
-- [ ] T025 [P] Update `Makefile` with targets for storage benchmark and persistence verification in `Makefile`
-- [ ] T026 [P] Update `scripts/verify_packaging.sh` and `README.md` with ChronoDB persistence documentation
-- [ ] T027 Execute full test suite including `-race` and crash recovery invariance validation
+- [X] T025 [P] Update `Makefile` with targets for storage benchmark and persistence verification in `Makefile`
+- [X] T026 [P] Update `scripts/verify_packaging.sh` and `README.md` with ChronoDB persistence documentation
+- [X] T027 Execute full test suite including `-race` and crash recovery invariance validation
 
 ---
 

@@ -14,9 +14,12 @@ type Config struct {
 	TopicAggregates string
 	HTTPPort        string
 	GRPCPort        string
-	NumShards       int
-	BatchSize       int
-	FlushInterval   time.Duration
+	NumShards          int
+	BatchSize          int
+	FlushInterval      time.Duration
+	DataDir            string
+	RetentionDays      int
+	CompactionInterval time.Duration
 }
 
 // Load loads configuration from environment variables with safe defaults.
@@ -43,9 +46,12 @@ func Load() *Config {
 		TopicAggregates: getEnv("STORAGE_TOPIC_AGGREGATES", "telemetry.aggregates"),
 		HTTPPort:        httpPort,
 		GRPCPort:        grpcPort,
-		NumShards:       getIntEnv("STORAGE_SHARDS", 16),
-		BatchSize:       getIntEnv("STORAGE_BATCH_SIZE", 1000),
-		FlushInterval:   getDurationEnv("STORAGE_FLUSH_INTERVAL", 100*time.Millisecond),
+		NumShards:          getIntEnv("STORAGE_SHARDS", 16),
+		BatchSize:          getIntEnv("STORAGE_BATCH_SIZE", 1000),
+		FlushInterval:      getDurationEnv("STORAGE_FLUSH_INTERVAL", 100*time.Millisecond),
+		DataDir:            getEnv("STORAGE_DATA_DIR", ""),
+		RetentionDays:      getIntEnv("STORAGE_RETENTION_DAYS", 14),
+		CompactionInterval: getDurationEnv("STORAGE_COMPACTION_INTERVAL", 5*time.Minute),
 	}
 }
 

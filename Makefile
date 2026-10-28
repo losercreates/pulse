@@ -84,6 +84,9 @@ k8s-verify:
 test:
 	$(GO) test -v -race ./internal/...
 
+storage-test:
+	$(GO) test -v -race ./internal/storage/... ./tests/integration/durable_storage_test.go
+
 bench:
 	$(GO) test -bench=. -benchmem ./tests/bench/...
 
@@ -91,4 +94,4 @@ e2e: build
 	./scripts/e2e_pipeline.sh
 
 clean:
-	rm -rf bin/
+	rm -rf bin/ data/

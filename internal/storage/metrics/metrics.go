@@ -13,6 +13,10 @@ type Metrics struct {
 	ConsumerLagSeconds       *prometheus.GaugeVec
 	ActiveShardsGauge        prometheus.Gauge
 	StoredRecordsGauge       prometheus.Gauge
+	DiskUsageBytes           prometheus.Gauge
+	CompactionDurationSeconds *prometheus.HistogramVec
+	RecoveryDurationSeconds  prometheus.Gauge
+	CompactedBytesTotal      *prometheus.CounterVec
 }
 
 // New creates and registers Prometheus metrics for the storage subsystem.
@@ -73,6 +77,41 @@ func New(reg prometheus.Registerer) *Metrics {
 				Name:      "stored_records_total",
 				Help:      "Total unique window aggregates currently stored.",
 			},
+		),
+		DiskUsageBytes: factory.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: "pulse",
+				Subsystem: "storage",
+				Name:      "disk_usage_bytes",
+				Help:      "Total storage disk utilization in bytes across all shards.",
+			},
+		),
+		CompactionDurationSeconds: factory.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: "pulse",
+				Subsystem: "storage",
+				Name:      "compaction_duration_seconds",
+				Help:      "Duration of background SSTable compaction cycles in seconds.",
+				Buckets:   []float64{0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0},
+			},
+			[]string{"shard"},
+		),
+		RecoveryDurationSeconds: factory.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: "pulse",
+				Subsystem: "storage",
+				Name:      "recovery_duration_seconds",
+				Help:      "Duration of startup crash recovery in seconds.",
+			},
+		),
+		CompactedBytesTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "storage",
+				Name:      "compacted_bytes_total",
+				Help:      "Total disk bytes reclaimed or processed by compaction.",
+			},
+			[]string{"type"},
 		),
 	}
 }

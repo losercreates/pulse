@@ -1,0 +1,116 @@
+{{- if .Values.chronod.persistence.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "pulse.fullname" . }}-chronod
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chronod
+spec:
+  serviceName: {{ include "pulse.fullname" . }}-chronod-headless
+  replicas: {{ .Values.chronod.replicaCount }}
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "pulse.selectorLabels" (dict "context" . "component" "chronod") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pulse.selectorLabels" (dict "context" . "component" "chronod") | nindent 8 }}
+        app.kubernetes.io/component: chronod
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.chronod.terminationGracePeriodSeconds | default 30 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: chronod
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.chronod.image.repository }}:{{ .Values.chronod.image.tag | default .Values.global.tag }}"
+          imagePullPolicy: {{ .Values.chronod.image.pullPolicy | default .Values.global.imagePullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: STORAGE_DATA_DIR
+              value: {{ .Values.chronod.persistence.mountPath | default "/var/lib/pulse/chronodb" | quote }}
+            - name: STORAGE_RETENTION_DAYS
+              value: {{ .Values.chronod.persistence.retentionDays | default 14 | quote }}
+            - name: STORAGE_COMPACTION_INTERVAL
+              value: {{ .Values.chronod.persistence.compactionInterval | default "5m" | quote }}
+            - name: STORAGE_HTTP_PORT
+              value: {{ .Values.chronod.service.httpPort | quote }}
+            - name: STORAGE_GRPC_PORT
+              value: {{ .Values.chronod.service.grpcPort | quote }}
+            - name: REDPANDA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_KAFKA_BROKERS
+            - name: STORAGE_GROUP_ID
+              value: {{ .Values.chronod.consumerGroup | quote }}
+            - name: STORAGE_TOPIC_AGGREGATES
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: PULSE_TOPIC_AGGREGATES
+            - name: STORAGE_SHARDS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "pulse.fullname" . }}-config
+                  key: CHRONOD_SHARD_COUNT
+          ports:
+            - name: http
+              containerPort: {{ .Values.chronod.service.httpPort }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.chronod.service.grpcPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.chronod.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.chronod.persistence.mountPath | default "/var/lib/pulse/chronodb" }}
+            - name: tmp-volume
+              mountPath: /tmp
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "pulse.labels" . | nindent 10 }}
+          app.kubernetes.io/component: chronod
+      spec:
+        accessModes:
+          - {{ .Values.chronod.persistence.accessMode | default "ReadWriteOnce" | quote }}
+        {{- if .Values.chronod.persistence.storageClass }}
+        storageClassName: {{ .Values.chronod.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.chronod.persistence.size | default "10Gi" | quote }}
+{{- end }}
