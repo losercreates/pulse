@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/losercreates/pulse/internal/auth"
 	"github.com/losercreates/pulse/internal/storage/config"
 	"github.com/losercreates/pulse/internal/storage/consumer"
 	"github.com/losercreates/pulse/internal/storage/engine"
@@ -71,9 +72,21 @@ func main() {
 	// 3. Initialize Storage Consumer Sink
 	sink := consumer.NewStorageConsumerSink(cfg, client, eng, m)
 
-	// 4. Initialize and start gRPC Server on port :50054
+	// 4. Initialize Security Authorizer if configured
+	var authorizer auth.TokenAuthorizer
+	var auditLogger auth.AuditLogger
+	if cfg.AuthEnabled {
+		auditLogger = auth.NewJSONAuditLogger(os.Stderr, "pulse-chronodb")
+		authorizer = auth.NewHS256Validator([]byte(cfg.JWTSecret), cfg.JWTIssuer, cfg.JWTAudience)
+		log.Printf("ChronoDB Query Authentication & RBAC enabled (issuer: %s, audience: %s)", cfg.JWTIssuer, cfg.JWTAudience)
+	}
+
+	// 5. Initialize and start gRPC Server on port :50054
 	grpcServer := grpc.NewServer()
 	chronoGRPCServer := server.NewChronoDBGRPCServer(eng, m)
+	if authorizer != nil {
+		chronoGRPCServer.WithAuth(authorizer, auditLogger)
+	}
 	telemetryv1.RegisterChronoDBServiceServer(grpcServer, chronoGRPCServer)
 
 	grpcListener, err := net.Listen("tcp", cfg.GRPCPort)
@@ -82,14 +95,17 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("ChronoDB gRPC Server listening on %s", cfg.GRPCPort)
+		log.Printf("ChronoDB gRPC Server listening on %s (Auth: %v)", cfg.GRPCPort, cfg.AuthEnabled)
 		if err := grpcServer.Serve(grpcListener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			log.Fatalf("gRPC server error: %v", err)
 		}
 	}()
 
-	// 5. Initialize and start HTTP Observability & Query Server on port :8084
+	// 6. Initialize and start HTTP Observability & Query Server on port :8084
 	httpServerWrapper := server.NewHTTPServer(eng, m, cfg.DataDir)
+	if authorizer != nil {
+		httpServerWrapper.WithAuth(authorizer, auditLogger)
+	}
 	httpServer := &http.Server{
 		Addr:         cfg.HTTPPort,
 		Handler:      httpServerWrapper.Handler(),

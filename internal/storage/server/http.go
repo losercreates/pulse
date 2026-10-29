@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/losercreates/pulse/internal/auth"
 	"github.com/losercreates/pulse/internal/storage/engine"
 	"github.com/losercreates/pulse/internal/storage/metrics"
 	telemetryv1 "github.com/losercreates/pulse/proto/v1"
@@ -17,10 +19,12 @@ import (
 
 // HTTPServer manages REST query and observability endpoints on port :8084.
 type HTTPServer struct {
-	mux     *http.ServeMux
-	engine  engine.ChronoEngine
-	metrics *metrics.Metrics
-	dataDir string
+	mux        *http.ServeMux
+	engine     engine.ChronoEngine
+	metrics    *metrics.Metrics
+	dataDir    string
+	authorizer auth.TokenAuthorizer
+	audit      auth.AuditLogger
 }
 
 // NewHTTPServer builds the HTTP router with REST query endpoints and observability probes.
@@ -46,6 +50,13 @@ func NewHTTPServer(eng engine.ChronoEngine, m *metrics.Metrics, dataDir ...strin
 	s.mux.HandleFunc("GET /api/v1/query/rollup", s.handleQueryRollup)
 	s.mux.HandleFunc("GET /api/v1/devices", s.handleDeviceCatalog)
 
+	return s
+}
+
+// WithAuth configures JWT authentication and role-based access control.
+func (s *HTTPServer) WithAuth(authorizer auth.TokenAuthorizer, audit auth.AuditLogger) *HTTPServer {
+	s.authorizer = authorizer
+	s.audit = audit
 	return s
 }
 
@@ -123,10 +134,40 @@ func (s *HTTPServer) handleReadyz(w http.ResponseWriter, r *http.Request) {
 }
 
 type queryResponse struct {
-	DeviceID     string                        `json:"device_id"`
-	MetricName   string                        `json:"metric_name"`
-	TotalRecords int                           `json:"total_records"`
+	DeviceID     string                         `json:"device_id"`
+	MetricName   string                         `json:"metric_name"`
+	TotalRecords int                            `json:"total_records"`
 	Records      []*telemetryv1.StoredAggregate `json:"records"`
+}
+
+func (s *HTTPServer) recordAuthFailure(protocol string, err error, clientIP string) {
+	reason := "unauthenticated"
+	statusCode := http.StatusUnauthorized
+	grpcCode := 16 // Unauthenticated
+
+	if errors.Is(err, auth.ErrForbidden) {
+		reason = "role_forbidden"
+		statusCode = http.StatusForbidden
+		grpcCode = 7 // PermissionDenied
+	} else if errors.Is(err, auth.ErrDeviceScopeForbidden) {
+		reason = "device_scope_forbidden"
+		statusCode = http.StatusForbidden
+		grpcCode = 7 // PermissionDenied
+	} else if errors.Is(err, auth.ErrTokenExpired) {
+		reason = "token_expired"
+	}
+
+	if s.metrics != nil && s.metrics.AuthFailuresTotal != nil {
+		s.metrics.AuthFailuresTotal.WithLabelValues(protocol, reason).Inc()
+	}
+
+	if s.audit != nil {
+		if statusCode == http.StatusForbidden {
+			s.audit.LogAccessDenied(clientIP, "JWT", err.Error(), statusCode, grpcCode)
+		} else {
+			s.audit.LogAuthFailure(clientIP, "JWT", err.Error(), statusCode, grpcCode)
+		}
+	}
 }
 
 func (s *HTTPServer) handleQueryTimeSeries(w http.ResponseWriter, r *http.Request) {
@@ -146,6 +187,21 @@ func (s *HTTPServer) handleQueryTimeSeries(w http.ResponseWriter, r *http.Reques
 	if deviceID == "" || metricName == "" || startStr == "" || endStr == "" {
 		http.Error(w, `{"error": "device_id, metric_name, start_time, and end_time are required"}`, http.StatusBadRequest)
 		return
+	}
+
+	// RBAC & Device Scope Validation (requires RoleViewer)
+	if s.authorizer != nil {
+		authCtx, err := s.authorizer.AuthorizeHTTP(r, auth.RoleViewer, deviceID)
+		if err != nil {
+			s.recordAuthFailure("http", err, r.RemoteAddr)
+			if errors.Is(err, auth.ErrForbidden) || errors.Is(err, auth.ErrDeviceScopeForbidden) {
+				http.Error(w, `{"error": "Forbidden: `+err.Error()+`"}`, http.StatusForbidden)
+			} else {
+				http.Error(w, `{"error": "Unauthorized: `+err.Error()+`"}`, http.StatusUnauthorized)
+			}
+			return
+		}
+		r = r.WithContext(auth.WithAuthContext(r.Context(), authCtx))
 	}
 
 	startNs, err := strconv.ParseInt(startStr, 10, 64)
@@ -188,10 +244,10 @@ func (s *HTTPServer) handleQueryTimeSeries(w http.ResponseWriter, r *http.Reques
 }
 
 type rollupResponse struct {
-	DeviceID     string                     `json:"device_id"`
-	MetricName   string                     `json:"metric_name"`
-	StepNs       int64                      `json:"step_ns"`
-	TotalBuckets int                        `json:"total_buckets"`
+	DeviceID     string                      `json:"device_id"`
+	MetricName   string                      `json:"metric_name"`
+	StepNs       int64                       `json:"step_ns"`
+	TotalBuckets int                         `json:"total_buckets"`
 	Buckets      []*telemetryv1.RollupBucket `json:"buckets"`
 }
 
@@ -213,6 +269,21 @@ func (s *HTTPServer) handleQueryRollup(w http.ResponseWriter, r *http.Request) {
 	if deviceID == "" || metricName == "" || startStr == "" || endStr == "" {
 		http.Error(w, `{"error": "device_id, metric_name, start_time, and end_time are required"}`, http.StatusBadRequest)
 		return
+	}
+
+	// RBAC & Device Scope Validation (requires RoleOperator)
+	if s.authorizer != nil {
+		authCtx, err := s.authorizer.AuthorizeHTTP(r, auth.RoleOperator, deviceID)
+		if err != nil {
+			s.recordAuthFailure("http", err, r.RemoteAddr)
+			if errors.Is(err, auth.ErrForbidden) || errors.Is(err, auth.ErrDeviceScopeForbidden) {
+				http.Error(w, `{"error": "Forbidden: `+err.Error()+`"}`, http.StatusForbidden)
+			} else {
+				http.Error(w, `{"error": "Unauthorized: `+err.Error()+`"}`, http.StatusUnauthorized)
+			}
+			return
+		}
+		r = r.WithContext(auth.WithAuthContext(r.Context(), authCtx))
 	}
 
 	startNs, err := strconv.ParseInt(startStr, 10, 64)
@@ -258,11 +329,26 @@ func (s *HTTPServer) handleQueryRollup(w http.ResponseWriter, r *http.Request) {
 }
 
 type catalogResponse struct {
-	TotalDevices int                             `json:"total_devices"`
+	TotalDevices int                               `json:"total_devices"`
 	Devices      []*telemetryv1.DeviceCatalogEntry `json:"devices"`
 }
 
 func (s *HTTPServer) handleDeviceCatalog(w http.ResponseWriter, r *http.Request) {
+	var authCtx *auth.AuthContext
+	if s.authorizer != nil {
+		var err error
+		authCtx, err = s.authorizer.AuthorizeHTTP(r, auth.RoleViewer, "")
+		if err != nil {
+			s.recordAuthFailure("http", err, r.RemoteAddr)
+			if errors.Is(err, auth.ErrForbidden) || errors.Is(err, auth.ErrDeviceScopeForbidden) {
+				http.Error(w, `{"error": "Forbidden: `+err.Error()+`"}`, http.StatusForbidden)
+			} else {
+				http.Error(w, `{"error": "Unauthorized: `+err.Error()+`"}`, http.StatusUnauthorized)
+			}
+			return
+		}
+	}
+
 	limit := 1000
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
@@ -274,6 +360,17 @@ func (s *HTTPServer) handleDeviceCatalog(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		http.Error(w, `{"error": "internal catalog error"}`, http.StatusInternalServerError)
 		return
+	}
+
+	// Filter device catalog by allowed devices in token
+	if authCtx != nil && len(authCtx.AllowedDevices) > 0 {
+		filtered := make([]*telemetryv1.DeviceCatalogEntry, 0, len(devices))
+		for _, d := range devices {
+			if authCtx.HasAccessToDevice(d.DeviceId) {
+				filtered = append(filtered, d)
+			}
+		}
+		devices = filtered
 	}
 
 	w.Header().Set("Content-Type", "application/json")

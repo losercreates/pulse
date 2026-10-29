@@ -7,13 +7,17 @@ import (
 
 // Metrics holds the registered Prometheus metrics for the Ingestion Gateway.
 type Metrics struct {
-	IngestedRecordsTotal       *prometheus.CounterVec
-	IngestedBytesTotal         *prometheus.CounterVec
-	ClockSkewRejectionsTotal   prometheus.Counter
-	MalformedPayloadsTotal     prometheus.Counter
-	IngestionLatencySeconds    *prometheus.HistogramVec
+	IngestedRecordsTotal        *prometheus.CounterVec
+	IngestedBytesTotal          *prometheus.CounterVec
+	ClockSkewRejectionsTotal    prometheus.Counter
+	MalformedPayloadsTotal      prometheus.Counter
+	IngestionLatencySeconds     *prometheus.HistogramVec
 	BrokerPublishLatencySeconds *prometheus.HistogramVec
-	BrokerConnected            prometheus.Gauge
+	BrokerConnected             prometheus.Gauge
+
+	// Milestone 009 Security Metrics
+	AuthSuccessesTotal *prometheus.CounterVec
+	AuthFailuresTotal  *prometheus.CounterVec
 }
 
 // New creates and registers Prometheus metrics for the gateway.
@@ -82,6 +86,24 @@ func New(reg prometheus.Registerer) *Metrics {
 				Name:      "connected",
 				Help:      "Broker connectivity status (1 = connected, 0 = disconnected).",
 			},
+		),
+		AuthSuccessesTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "ingest",
+				Name:      "auth_successes_total",
+				Help:      "Total count of successfully authenticated ingestion requests.",
+			},
+			[]string{"protocol", "method"},
+		),
+		AuthFailuresTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "ingest",
+				Name:      "auth_failures_total",
+				Help:      "Total count of failed or rejected authentication and spoofing attempts.",
+			},
+			[]string{"protocol", "reason"},
 		),
 	}
 }

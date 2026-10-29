@@ -31,4 +31,7 @@ Thumbs.db
 
 # Local runtime data
 data/
+certs/
+*.crt
+*.key
 

@@ -9,9 +9,9 @@
 
 **Purpose**: Test certificate generator, security identity types, and audit logging primitives.
 
-- [ ] T001 Create local testing certificate generator script in `scripts/generate_certs.sh`
-- [ ] T002 [P] Define `DeviceIdentity`, `AuthContext`, `Role`, `TokenClaims`, and security errors in `internal/auth/identity.go`
-- [ ] T003 [P] Implement structured JSON security audit logger for authentication and spoofing events in `internal/auth/audit.go`
+- [X] T001 Create local testing certificate generator script in `scripts/generate_certs.sh`
+- [X] T002 [P] Define `DeviceIdentity`, `AuthContext`, `Role`, `TokenClaims`, and security errors in `internal/auth/identity.go`
+- [X] T003 [P] Implement structured JSON security audit logger for authentication and spoofing events in `internal/auth/audit.go`
 
 ---
 
@@ -21,10 +21,10 @@
 
 **⚠️ CRITICAL**: Foundational tasks must be completed before service-specific user story integrations.
 
-- [ ] T004 [P] Implement pre-shared API key validator with constant-time verification in `internal/auth/apikey.go`
-- [ ] T005 [P] Implement pure Go HMAC-SHA256 (`HS256`) and Ed25519 JWT validator and claims parser in `internal/auth/jwt.go`
-- [ ] T006 [P] Implement HMAC-SHA256 webhook signer and constant-time verifier with replay protection in `internal/auth/webhook.go`
-- [ ] T007 [P] Implement in-memory token-bucket rate limiter for perimeter DoS mitigation in `internal/auth/ratelimit.go`
+- [X] T004 [P] Implement pre-shared API key validator with constant-time verification in `internal/auth/apikey.go`
+- [X] T005 [P] Implement pure Go HMAC-SHA256 (`HS256`) and Ed25519 JWT validator and claims parser in `internal/auth/jwt.go`
+- [X] T006 [P] Implement HMAC-SHA256 webhook signer and constant-time verifier with replay protection in `internal/auth/webhook.go`
+- [X] T007 [P] Implement in-memory token-bucket rate limiter for perimeter DoS mitigation in `internal/auth/ratelimit.go`
 
 **Checkpoint**: Core cryptographic engines and rate limiting ready for microservice integration.
 
@@ -38,16 +38,16 @@
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Create unit and integration tests for mTLS certificate extraction, API key verification, and identity anti-spoofing in `internal/auth/mtls_test.go` and `internal/gateway/server/auth_test.go`
+- [X] T008 [P] [US1] Create unit and integration tests for mTLS certificate extraction, API key verification, and identity anti-spoofing in `internal/auth/mtls_test.go` and `internal/gateway/server/auth_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Implement X.509 client certificate parser, CA pool loader, and SAN/CN device binding in `internal/auth/mtls.go`
-- [ ] T010 [P] [US1] Implement Gateway HTTP authentication and anti-spoofing middleware in `internal/auth/http_middleware.go`
-- [ ] T011 [P] [US1] Implement Gateway gRPC authentication and anti-spoofing interceptors in `internal/auth/grpc_interceptor.go`
-- [ ] T012 [US1] Update Gateway configuration to support TLS, client CA paths, API key files, and rate limits in `internal/gateway/config/config.go`
-- [ ] T013 [US1] Integrate authentication middleware, rate limiting, and gRPC interceptors into `internal/gateway/server/http.go` and `internal/gateway/server/grpc.go`
-- [ ] T014 [US1] Expose authentication outcome Prometheus metrics (`pulse_ingest_auth_successes_total`, `pulse_ingest_auth_failures_total`) in `internal/gateway/metrics/metrics.go`
+- [X] T009 [P] [US1] Implement X.509 client certificate parser, CA pool loader, and SAN/CN device binding in `internal/auth/mtls.go`
+- [X] T010 [P] [US1] Implement Gateway HTTP authentication and anti-spoofing middleware in `internal/auth/http_middleware.go`
+- [X] T011 [P] [US1] Implement Gateway gRPC authentication and anti-spoofing interceptors in `internal/auth/grpc_interceptor.go`
+- [X] T012 [US1] Update Gateway configuration to support TLS, client CA paths, API key files, and rate limits in `internal/gateway/config/config.go`
+- [X] T013 [US1] Integrate authentication middleware, rate limiting, and gRPC interceptors into `internal/gateway/server/http.go` and `internal/gateway/server/grpc.go`
+- [X] T014 [US1] Expose authentication outcome Prometheus metrics (`pulse_ingest_auth_successes_total`, `pulse_ingest_auth_failures_total`) in `internal/gateway/metrics/metrics.go`
 
 **Checkpoint**: Ingestion Gateway perimeter security operational with mTLS, API keys, anti-spoofing, and rate limiting.
 
@@ -61,14 +61,14 @@
 
 ### Tests for User Story 2
 
-- [ ] T015 [P] [US2] Create unit and integration tests for Bearer JWT parsing, role validation (`Viewer`, `Operator`, `Admin`), and device scope boundary checks in `internal/storage/server/auth_test.go`
+- [X] T015 [P] [US2] Create unit and integration tests for Bearer JWT parsing, role validation (`Viewer`, `Operator`, `Admin`), and device scope boundary checks in `internal/storage/server/auth_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T016 [P] [US2] Update ChronoDB configuration to support JWT secret, issuer, and RBAC parameters in `internal/storage/config/config.go`
-- [ ] T017 [US2] Implement ChronoDB HTTP query authentication and RBAC evaluation middleware in `internal/storage/server/http.go`
-- [ ] T018 [US2] Implement ChronoDB gRPC query authorization interceptor in `internal/storage/server/grpc.go`
-- [ ] T019 [US2] Expose storage authentication failure Prometheus metrics (`pulse_storage_auth_failures_total`) in `internal/storage/metrics/metrics.go`
+- [X] T016 [P] [US2] Update ChronoDB configuration to support JWT secret, issuer, and RBAC parameters in `internal/storage/config/config.go`
+- [X] T017 [US2] Implement ChronoDB HTTP query authentication and RBAC evaluation middleware in `internal/storage/server/http.go`
+- [X] T018 [US2] Implement ChronoDB gRPC query authorization interceptor in `internal/storage/server/grpc.go`
+- [X] T019 [US2] Expose storage authentication failure Prometheus metrics (`pulse_storage_auth_failures_total`) in `internal/storage/metrics/metrics.go`
 
 **Checkpoint**: ChronoDB historical queries and rollups secured with JWT and role-based access control.
 
@@ -82,13 +82,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Create unit tests for alert webhook HMAC signing, timestamp header validation, and replay rejection in `internal/alert/sink/webhook_security_test.go`
+- [X] T020 [P] [US3] Create unit tests for alert webhook HMAC signing, timestamp header validation, and replay rejection in `internal/alert/sink/webhook_security_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T021 [P] [US3] Update alert dispatcher configuration to support `WebhookHMACSecret` in `internal/alert/config/config.go`
-- [ ] T022 [US3] Update `internal/alert/sink/webhook.go` to compute HMAC-SHA256 and attach `X-Pulse-Signature` and `X-Pulse-Timestamp` headers
-- [ ] T023 [US3] Implement downstream webhook verification helper SDK in `pkg/webhookverifier/verifier.go`
+- [X] T021 [P] [US3] Update alert dispatcher configuration to support `WebhookHMACSecret` in `internal/alert/config/config.go`
+- [X] T022 [US3] Update `internal/alert/sink/webhook.go` to compute HMAC-SHA256 and attach `X-Pulse-Signature` and `X-Pulse-Timestamp` headers
+- [X] T023 [US3] Implement downstream webhook verification helper SDK in `pkg/webhookverifier/verifier.go`
 
 **Checkpoint**: Outbound alert webhooks cryptographically signed and replay-protected.
 
@@ -102,13 +102,13 @@
 
 ### Tests for User Story 4
 
-- [ ] T024 [P] [US4] Create Helm integration tests validating `NetworkPolicy` manifests and `Secret` templates in `tests/integration/k8s_security_test.go`
+- [X] T024 [P] [US4] Create Helm integration tests validating `NetworkPolicy` manifests and `Secret` templates in `tests/integration/k8s_security_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T025 [P] [US4] Update `deployments/helm/pulse/values.yaml` with `security.networkPolicies` and `security.secrets` configuration parameters
-- [ ] T026 [US4] Implement default-deny and inter-service least-privilege `NetworkPolicy` manifests in `deployments/helm/pulse/templates/networkpolicy.yaml`
-- [ ] T027 [US4] Implement Kubernetes `Secret` templates for TLS certificates, JWT secrets, and HMAC signing keys in `deployments/helm/pulse/templates/secrets.yaml`
+- [X] T025 [P] [US4] Update `deployments/helm/pulse/values.yaml` with `security.networkPolicies` and `security.secrets` configuration parameters
+- [X] T026 [US4] Implement default-deny and inter-service least-privilege `NetworkPolicy` manifests in `deployments/helm/pulse/templates/networkpolicy.yaml`
+- [X] T027 [US4] Implement Kubernetes `Secret` templates for TLS certificates, JWT secrets, and HMAC signing keys in `deployments/helm/pulse/templates/secrets.yaml`
 
 **Checkpoint**: Kubernetes network traffic isolated and secrets managed via native Kubernetes Secrets.
 
@@ -118,9 +118,9 @@
 
 **Purpose**: Developer tooling, build targets, documentation, and end-to-end race validation.
 
-- [ ] T028 [P] Update `Makefile` with targets for certificate generation (`make certs`) and security verification in `Makefile`
-- [ ] T029 [P] Update `scripts/verify_packaging.sh` and `README.md` with Milestone 009 security documentation, mTLS guide, and RBAC instructions
-- [ ] T030 Execute full test suite including `-race`, security penetration tests, and timing invariance validation
+- [X] T028 [P] Update `Makefile` with targets for certificate generation (`make certs`) and security verification in `Makefile`
+- [X] T029 [P] Update `scripts/verify_packaging.sh` and `README.md` with Milestone 009 security documentation, mTLS guide, and RBAC instructions
+- [X] T030 Execute full test suite including `-race`, security penetration tests, and timing invariance validation
 
 ---
 

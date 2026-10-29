@@ -146,6 +146,8 @@ func TestHelmChart_TemplatesContent(t *testing.T) {
 		"chronod-service.yaml",
 		"pdb.yaml",
 		"simulator-job.yaml",
+		"networkpolicy.yaml",
+		"secrets.yaml",
 	}
 
 	for _, tmpl := range requiredTemplates {

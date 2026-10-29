@@ -9,17 +9,24 @@ import (
 
 // Config holds runtime configuration parameters for the ChronoDB Storage Sink & Query Service.
 type Config struct {
-	Brokers         []string
-	GroupID         string
-	TopicAggregates string
-	HTTPPort        string
-	GRPCPort        string
+	Brokers            []string
+	GroupID            string
+	TopicAggregates    string
+	HTTPPort           string
+	GRPCPort           string
 	NumShards          int
 	BatchSize          int
 	FlushInterval      time.Duration
 	DataDir            string
 	RetentionDays      int
 	CompactionInterval time.Duration
+
+	// Milestone 009: Query Authentication & RBAC
+	AuthEnabled   bool
+	JWTSecret     string
+	JWTSecretFile string
+	JWTIssuer     string
+	JWTAudience   string
 }
 
 // Load loads configuration from environment variables with safe defaults.
@@ -40,24 +47,53 @@ func Load() *Config {
 		grpcPort = ":" + grpcPort
 	}
 
+	jwtSecret := getEnv("STORAGE_JWT_SECRET", "")
+	jwtSecretFile := getEnv("STORAGE_JWT_SECRET_FILE", "")
+	if jwtSecret == "" && jwtSecretFile != "" {
+		if data, err := os.ReadFile(jwtSecretFile); err == nil {
+			jwtSecret = strings.TrimSpace(string(data))
+		}
+	}
+
+	authEnabled := getEnvBool("STORAGE_AUTH_ENABLED", false)
+	if jwtSecret != "" || jwtSecretFile != "" {
+		authEnabled = true
+	}
+
 	return &Config{
-		Brokers:         brokers,
-		GroupID:         getEnv("STORAGE_GROUP_ID", "pulse-chronodb-consumer"),
-		TopicAggregates: getEnv("STORAGE_TOPIC_AGGREGATES", "telemetry.aggregates"),
-		HTTPPort:        httpPort,
-		GRPCPort:        grpcPort,
+		Brokers:            brokers,
+		GroupID:            getEnv("STORAGE_GROUP_ID", "pulse-chronodb-consumer"),
+		TopicAggregates:    getEnv("STORAGE_TOPIC_AGGREGATES", "telemetry.aggregates"),
+		HTTPPort:           httpPort,
+		GRPCPort:           grpcPort,
 		NumShards:          getIntEnv("STORAGE_SHARDS", 16),
 		BatchSize:          getIntEnv("STORAGE_BATCH_SIZE", 1000),
 		FlushInterval:      getDurationEnv("STORAGE_FLUSH_INTERVAL", 100*time.Millisecond),
 		DataDir:            getEnv("STORAGE_DATA_DIR", ""),
 		RetentionDays:      getIntEnv("STORAGE_RETENTION_DAYS", 14),
 		CompactionInterval: getDurationEnv("STORAGE_COMPACTION_INTERVAL", 5*time.Minute),
+
+		AuthEnabled:   authEnabled,
+		JWTSecret:     jwtSecret,
+		JWTSecretFile: jwtSecretFile,
+		JWTIssuer:     getEnv("STORAGE_JWT_ISSUER", "pulse-auth"),
+		JWTAudience:   getEnv("STORAGE_JWT_AUDIENCE", "pulse-chronodb"),
 	}
 }
 
 func getEnv(key, defaultVal string) string {
 	if val, ok := os.LookupEnv(key); ok && val != "" {
 		return val
+	}
+	return defaultVal
+}
+
+func getEnvBool(key string, defaultVal bool) bool {
+	if val, ok := os.LookupEnv(key); ok && val != "" {
+		parsed, err := strconv.ParseBool(val)
+		if err == nil {
+			return parsed
+		}
 	}
 	return defaultVal
 }

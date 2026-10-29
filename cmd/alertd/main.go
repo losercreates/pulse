@@ -15,6 +15,7 @@ import (
 	"github.com/losercreates/pulse/internal/alert/metrics"
 	"github.com/losercreates/pulse/internal/alert/server"
 	"github.com/losercreates/pulse/internal/alert/sink"
+	"github.com/losercreates/pulse/internal/auth"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -44,6 +45,10 @@ func main() {
 
 	// 2. Setup Sinks
 	primarySink := sink.NewWebhookSink(cfg.WebhookURL, nil)
+	if cfg.WebhookHMACSecret != "" {
+		primarySink.WithSigner(auth.NewWebhookSigner([]byte(cfg.WebhookHMACSecret)))
+		log.Println("Alert Dispatcher HMAC-SHA256 outbound signing enabled.")
+	}
 	deadLetterSink := sink.NewDeadLetterSink(client, cfg.TopicDeadLetter)
 
 	// 3. Setup Alert Dispatcher

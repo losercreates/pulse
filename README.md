@@ -221,6 +221,43 @@ Milestone 008 implements persistent storage durability, Write-Ahead Logging (WAL
    - Headless Service provides deterministic DNS peer resolution (`chronod-0.pulse-chronod-headless`).
    - Non-root security context (`UID 65532`, `fsGroup: 65532`) and readiness probes checking disk writeability and $>5\%$ free storage space.
 
+
+---
+
+## Milestone 009: Security & Access Control
+
+Milestone 009 implements defense-in-depth perimeter security, client identity anti-spoofing, fine-grained Role-Based Access Control (RBAC), decoupled webhook cryptographic integrity, Kubernetes NetworkPolicies, and secret management conforming strictly to Constitution Principles I–V:
+1. **Edge Perimeter Authentication & Identity Anti-Spoofing (Constitution Principle I)**:
+   - **Mutual TLS (mTLS)**: Enforces TLS 1.3 client certificate verification against trusted CA bundles on Ingestion Gateway HTTP (`:8080`) and gRPC (`:50051`).
+   - **Pre-Shared API Keys**: Constant-time verification (`crypto/subtle.ConstantTimeCompare`) with zero-lock atomic stores (`atomic.Pointer`) for resource-constrained edge devices.
+   - **Cryptographic Anti-Spoofing Invariant**: Binds client certificate Common Name (CN)/SAN to telemetry payload `reading.device_id`. If `identity.DeviceID != payload.device_id`, the perimeter immediately returns HTTP 403 Forbidden / gRPC `PermissionDenied` before broker publish.
+   - **Token-Bucket Rate Limiting**: Sharded, low-contention token-bucket limiter dropping rogue floods with HTTP 429 (`Retry-After: 1`).
+2. **ChronoDB Query API Authentication & RBAC**:
+   - Zero-dependency pure Go JWT validator (`HS256`, `EdDSA`) verifying Bearer tokens on REST (`:8084`) and gRPC (`:50054`).
+   - **Fine-Grained Role Hierarchy**:
+     - `Viewer`: Historical telemetry range queries (`/api/v1/query`) and device catalog (`/api/v1/devices`).
+     - `Operator`: Analytical rollups (`/api/v1/query/rollup`) + health metrics.
+     - `Admin`: Administrative operations, compaction triggers, and cross-tenant actions.
+   - **Tenant & Device Scope Isolation**: Token claims support `allowed_devices: ["turbine-alpha-*"]` glob patterns. Query requests specifying target `device_id` outside token scopes are rejected with HTTP 403 Forbidden.
+3. **Decoupled Webhook Cryptographic Integrity (HMAC-SHA256)**:
+   - `alertd` attaches cryptographic signatures to outbound alert webhooks:
+     - `X-Pulse-Signature: sha256=<hex_digest>`
+     - `X-Pulse-Timestamp: <unix_epoch_seconds>`
+   - Canonical signing string: `{timestamp}.{raw_json_body}`.
+   - **Replay Protection**: Reject alerts outside clock drift window ($|T_{\text{current}} - T_{\text{header}}| \le 300\text{s}$).
+   - **Receiver Verification SDK**: Public `pkg/webhookverifier` SDK and HTTP middleware for downstream systems.
+4. **Kubernetes NetworkPolicies & Secret Management**:
+   - **Default-Deny Ingress**: All pods in namespace block inbound network traffic by default.
+   - **Inter-Service Least-Privilege Rules**:
+     - `gateway`: Ingress 8080/50051; egress only to Redpanda (9092) and DNS (53).
+     - `processor`: Ingress 8081 (/healthz, /metrics); egress only to Redpanda (9092) and DNS.
+     - `alertd`: Ingress 8083; egress to Redpanda (9092), external webhooks (443/80), and DNS.
+     - `chronod`: Ingress 8084/50054; egress only to Redpanda (9092) and DNS.
+   - **Native Secret Management**: Mounts certificates, API keys, JWT secrets, and HMAC keys as read-only volumes (`mode: 0400`) into non-root distroless containers (`UID 65532`).
+5. **Developer & Security Operations Commands**:
+   - `make certs`: Generates development CA, server TLS certs, and client certificates in `certs/`.
+   - `make test-security`: Executes unit, integration, and anti-spoofing security verification suite.
+
 ---
 
 ## Quickstart
@@ -322,10 +359,13 @@ make dashboards
 make obs-down
 ```
 
-### 7. Run Test Suites & Benchmarks
+### 7. Run Test Suites, Benchmarks & Security Verification
 ```bash
 make test
+make test-security   # Runs mTLS, anti-spoofing, RBAC, and Webhook HMAC tests
 make bench
 make e2e
-make sim   # Runs 50k events/sec simulator load test
+make sim             # Runs 50k events/sec simulator load test
+make certs           # Generates local test certificates in certs/
+make k8s-verify      # Verifies Kubernetes packaging, NetworkPolicies and Secrets
 ```

@@ -1,0 +1,159 @@
+{{- if .Values.security.networkPolicies.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "pulse.fullname" . }}-default-deny-ingress
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "pulse.fullname" . }}-gateway-netpol
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.gateway.service.httpPort | default 8080 }}
+        - protocol: TCP
+          port: {{ .Values.gateway.service.grpcPort | default 50051 }}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redpanda
+      ports:
+        - protocol: TCP
+          port: 9092
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "pulse.fullname" . }}-processor-netpol
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: processor
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: processor
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.processor.service.httpPort | default 8081 }}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redpanda
+      ports:
+        - protocol: TCP
+          port: 9092
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "pulse.fullname" . }}-chronod-netpol
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chronod
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: chronod
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.chronod.service.httpPort | default 8084 }}
+        - protocol: TCP
+          port: {{ .Values.chronod.service.grpcPort | default 50054 }}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redpanda
+      ports:
+        - protocol: TCP
+          port: 9092
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "pulse.fullname" . }}-alertd-netpol
+  labels:
+    {{- include "pulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: alertd
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: alertd
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.alertd.service.httpPort | default 8083 }}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redpanda
+      ports:
+        - protocol: TCP
+          port: 9092
+    - ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+{{- end }}
+

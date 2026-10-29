@@ -25,6 +25,10 @@ type Config struct {
 	MaxRetries                  int
 	CircuitBreakerThreshold     int
 	CircuitBreakerCoolOff       time.Duration
+
+	// Milestone 009: Webhook HMAC Cryptographic Signing
+	WebhookHMACSecret     string
+	WebhookHMACSecretFile string
 }
 
 // Load loads configuration from environment variables with safe defaults.
@@ -38,6 +42,14 @@ func Load() *Config {
 	httpPort := getEnv("HTTP_PORT", "8083")
 	if !strings.HasPrefix(httpPort, ":") {
 		httpPort = ":" + httpPort
+	}
+
+	hmacSecret := getEnv("ALERT_WEBHOOK_HMAC_SECRET", "")
+	hmacSecretFile := getEnv("ALERT_WEBHOOK_HMAC_SECRET_FILE", "")
+	if hmacSecret == "" && hmacSecretFile != "" {
+		if data, err := os.ReadFile(hmacSecretFile); err == nil {
+			hmacSecret = strings.TrimSpace(string(data))
+		}
 	}
 
 	return &Config{
@@ -57,6 +69,9 @@ func Load() *Config {
 		MaxRetries:                  getIntEnv("ALERT_MAX_RETRIES", 3),
 		CircuitBreakerThreshold:     getIntEnv("ALERT_CB_THRESHOLD", 5),
 		CircuitBreakerCoolOff:       getDurationEnv("ALERT_CB_COOLOFF", 30*time.Second),
+
+		WebhookHMACSecret:     hmacSecret,
+		WebhookHMACSecretFile: hmacSecretFile,
 	}
 }
 

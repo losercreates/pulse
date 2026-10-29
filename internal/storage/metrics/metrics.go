@@ -7,16 +7,19 @@ import (
 
 // Metrics holds registered Prometheus metrics for the ChronoDB Storage Sink & Query Service.
 type Metrics struct {
-	StorageWritesTotal       *prometheus.CounterVec
-	BatchWriteLatencySeconds *prometheus.HistogramVec
-	QueryLatencySeconds      *prometheus.HistogramVec
-	ConsumerLagSeconds       *prometheus.GaugeVec
-	ActiveShardsGauge        prometheus.Gauge
-	StoredRecordsGauge       prometheus.Gauge
-	DiskUsageBytes           prometheus.Gauge
+	StorageWritesTotal        *prometheus.CounterVec
+	BatchWriteLatencySeconds  *prometheus.HistogramVec
+	QueryLatencySeconds       *prometheus.HistogramVec
+	ConsumerLagSeconds        *prometheus.GaugeVec
+	ActiveShardsGauge         prometheus.Gauge
+	StoredRecordsGauge        prometheus.Gauge
+	DiskUsageBytes            prometheus.Gauge
 	CompactionDurationSeconds *prometheus.HistogramVec
-	RecoveryDurationSeconds  prometheus.Gauge
-	CompactedBytesTotal      *prometheus.CounterVec
+	RecoveryDurationSeconds   prometheus.Gauge
+	CompactedBytesTotal       *prometheus.CounterVec
+
+	// Milestone 009: Query Authentication & RBAC Metrics
+	AuthFailuresTotal *prometheus.CounterVec
 }
 
 // New creates and registers Prometheus metrics for the storage subsystem.
@@ -112,6 +115,15 @@ func New(reg prometheus.Registerer) *Metrics {
 				Help:      "Total disk bytes reclaimed or processed by compaction.",
 			},
 			[]string{"type"},
+		),
+		AuthFailuresTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "storage",
+				Name:      "auth_failures_total",
+				Help:      "Total count of unauthorized or forbidden query requests to ChronoDB.",
+			},
+			[]string{"protocol", "reason"},
 		),
 	}
 }

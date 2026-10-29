@@ -1,4 +1,4 @@
-.PHONY: proto up down obs-up obs-down dashboards test bench build run clean e2e sim docker-build helm-lint helm-template k8s-verify
+.PHONY: proto up down obs-up obs-down dashboards test bench build run clean e2e sim docker-build helm-lint helm-template k8s-verify certs test-security
 
 GO ?= go
 PROTOC ?= protoc
@@ -52,7 +52,7 @@ dashboards:
 	@echo "ChronoDB Storage:       http://localhost:3000/d/pulse-chronodb-storage"
 	@echo "=================================================================="
 
-build: proto
+build:
 	$(GO) build -o bin/gateway ./cmd/gateway
 	$(GO) build -o bin/processor ./cmd/processor
 	$(GO) build -o bin/alertd ./cmd/alertd
@@ -80,6 +80,12 @@ helm-template:
 
 k8s-verify:
 	./scripts/verify_packaging.sh
+
+certs:
+	./scripts/generate_certs.sh
+
+test-security:
+	$(GO) test -v -race -run "Auth|Spoofing|Security|Webhook" ./internal/auth/... ./pkg/webhookverifier/... ./internal/gateway/server/... ./internal/storage/server/... ./internal/alert/sink/... ./tests/integration/...
 
 test:
 	$(GO) test -v -race ./internal/...

@@ -44,9 +44,9 @@ echo "Pulse Production Packaging & Kubernetes Verification Harness"
 echo "=================================================================="
 
 # Step 1: Run Go integration tests for Docker packaging and Helm templates
-log_info "Running Go packaging integration tests..."
-go test -v tests/integration/k8s_packaging_test.go
-log_pass "Packaging and Helm integration tests passed"
+log_info "Running Go packaging and security integration tests..."
+go test -v tests/integration/k8s_packaging_test.go tests/integration/k8s_security_test.go
+log_pass "Packaging, Helm, and Security integration tests passed"
 
 # Step 2: Validate Dockerfile existence and security directives
 log_info "Validating Dockerfile definitions in deployments/docker/..."
@@ -94,4 +94,6 @@ echo "  - 1 ChronoDB StatefulSet with PersistentVolumeClaim (10Gi, ReadWriteOnce
 echo "  - 2 HPAs (Gateway CPU scaling, Processor 12-partition ceiling)"
 echo "  - 1 PodDisruptionBudget ensuring high availability during drains"
 echo "  - 1 Simulator Batch Verification Job template"
+echo "  - Kubernetes NetworkPolicies (Default-Deny Ingress, least-privilege pod isolation)"
+echo "  - Kubernetes Secrets (TLS certificates, API keys, JWT secret, Webhook HMAC secret)"
 echo "=================================================================="

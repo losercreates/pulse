@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/losercreates/pulse/internal/auth"
 	telemetryv1 "github.com/losercreates/pulse/proto/v1"
 )
 
@@ -31,6 +32,7 @@ type WebhookPayload struct {
 type WebhookSink struct {
 	url    string
 	client *http.Client
+	signer auth.WebhookSigner
 }
 
 // NewWebhookSink creates a new WebhookSink targeting targetURL.
@@ -49,6 +51,12 @@ func NewWebhookSink(targetURL string, client *http.Client) *WebhookSink {
 		url:    targetURL,
 		client: client,
 	}
+}
+
+// WithSigner attaches an HMAC-SHA256 signer to the WebhookSink for cryptographic integrity.
+func (s *WebhookSink) WithSigner(signer auth.WebhookSigner) *WebhookSink {
+	s.signer = signer
+	return s
 }
 
 // Name returns the identifier for this sink.
@@ -83,6 +91,13 @@ func (s *WebhookSink) Deliver(ctx context.Context, alert *telemetryv1.AlertEvent
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Pulse-AlertDispatcher/1.0")
+
+	// Milestone 009: Attach HMAC-SHA256 signature and timestamp headers
+	if s.signer != nil {
+		sig, tsStr := s.signer.Sign(time.Now().UTC(), body)
+		req.Header.Set(auth.HeaderPulseSignature, sig)
+		req.Header.Set(auth.HeaderPulseTimestamp, tsStr)
+	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {

@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"errors"
 
+	"github.com/losercreates/pulse/internal/auth"
 	"github.com/losercreates/pulse/internal/storage/engine"
 	"github.com/losercreates/pulse/internal/storage/metrics"
 	telemetryv1 "github.com/losercreates/pulse/proto/v1"
@@ -13,8 +15,10 @@ import (
 // ChronoDBGRPCServer implements the ChronoDBServiceServer gRPC interface across the polyglot boundary.
 type ChronoDBGRPCServer struct {
 	telemetryv1.UnimplementedChronoDBServiceServer
-	engine  engine.ChronoEngine
-	metrics *metrics.Metrics
+	engine     engine.ChronoEngine
+	metrics    *metrics.Metrics
+	authorizer auth.TokenAuthorizer
+	audit      auth.AuditLogger
 }
 
 // NewChronoDBGRPCServer creates a new ChronoDBGRPCServer.
@@ -22,6 +26,44 @@ func NewChronoDBGRPCServer(eng engine.ChronoEngine, m *metrics.Metrics) *ChronoD
 	return &ChronoDBGRPCServer{
 		engine:  eng,
 		metrics: m,
+	}
+}
+
+// WithAuth configures JWT authentication and role-based access control for gRPC.
+func (s *ChronoDBGRPCServer) WithAuth(authorizer auth.TokenAuthorizer, audit auth.AuditLogger) *ChronoDBGRPCServer {
+	s.authorizer = authorizer
+	s.audit = audit
+	return s
+}
+
+func (s *ChronoDBGRPCServer) recordGRPCAuthFailure(ctx context.Context, err error) {
+	reason := "unauthenticated"
+	statusCode := 401
+	grpcCode := codes.Unauthenticated
+
+	if errors.Is(err, auth.ErrForbidden) {
+		reason = "role_forbidden"
+		statusCode = 403
+		grpcCode = codes.PermissionDenied
+	} else if errors.Is(err, auth.ErrDeviceScopeForbidden) {
+		reason = "device_scope_forbidden"
+		statusCode = 403
+		grpcCode = codes.PermissionDenied
+	} else if errors.Is(err, auth.ErrTokenExpired) {
+		reason = "token_expired"
+	}
+
+	if s.metrics != nil && s.metrics.AuthFailuresTotal != nil {
+		s.metrics.AuthFailuresTotal.WithLabelValues("grpc", reason).Inc()
+	}
+
+	if s.audit != nil {
+		clientIP := auth.ExtractPeerIP(ctx)
+		if statusCode == 403 {
+			s.audit.LogAccessDenied(clientIP, "JWT", err.Error(), statusCode, int(grpcCode))
+		} else {
+			s.audit.LogAuthFailure(clientIP, "JWT", err.Error(), statusCode, int(grpcCode))
+		}
 	}
 }
 
@@ -51,6 +93,19 @@ func (s *ChronoDBGRPCServer) QueryTimeSeries(ctx context.Context, req *telemetry
 		return nil, status.Error(codes.InvalidArgument, "start_time_ns must be <= end_time_ns")
 	}
 
+	// RBAC & Device Scope Validation (requires RoleViewer)
+	if s.authorizer != nil {
+		authCtx, err := s.authorizer.AuthorizeGRPC(ctx, auth.RoleViewer, req.DeviceId)
+		if err != nil {
+			s.recordGRPCAuthFailure(ctx, err)
+			if errors.Is(err, auth.ErrForbidden) || errors.Is(err, auth.ErrDeviceScopeForbidden) {
+				return nil, status.Errorf(codes.PermissionDenied, "access forbidden: %v", err)
+			}
+			return nil, status.Errorf(codes.Unauthenticated, "authentication required: %v", err)
+		}
+		ctx = auth.WithAuthContext(ctx, authCtx)
+	}
+
 	records, err := s.engine.QueryTimeSeries(ctx, req.DeviceId, req.MetricName, req.StartTimeNs, req.EndTimeNs, int(req.Limit))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "query failed: %v", err)
@@ -71,6 +126,19 @@ func (s *ChronoDBGRPCServer) QueryRollup(ctx context.Context, req *telemetryv1.Q
 		return nil, status.Error(codes.InvalidArgument, "start_time_ns must be <= end_time_ns")
 	}
 
+	// RBAC & Device Scope Validation (requires RoleOperator)
+	if s.authorizer != nil {
+		authCtx, err := s.authorizer.AuthorizeGRPC(ctx, auth.RoleOperator, req.DeviceId)
+		if err != nil {
+			s.recordGRPCAuthFailure(ctx, err)
+			if errors.Is(err, auth.ErrForbidden) || errors.Is(err, auth.ErrDeviceScopeForbidden) {
+				return nil, status.Errorf(codes.PermissionDenied, "access forbidden: %v", err)
+			}
+			return nil, status.Errorf(codes.Unauthenticated, "authentication required: %v", err)
+		}
+		ctx = auth.WithAuthContext(ctx, authCtx)
+	}
+
 	buckets, err := s.engine.QueryRollup(ctx, req.DeviceId, req.MetricName, req.StartTimeNs, req.EndTimeNs, req.StepNs)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "rollup query failed: %v", err)
@@ -84,6 +152,19 @@ func (s *ChronoDBGRPCServer) QueryRollup(ctx context.Context, req *telemetryv1.Q
 
 // GetDeviceCatalog lists discovered active devices and recorded metrics.
 func (s *ChronoDBGRPCServer) GetDeviceCatalog(ctx context.Context, req *telemetryv1.GetDeviceCatalogRequest) (*telemetryv1.GetDeviceCatalogResponse, error) {
+	var authCtx *auth.AuthContext
+	if s.authorizer != nil {
+		var err error
+		authCtx, err = s.authorizer.AuthorizeGRPC(ctx, auth.RoleViewer, "")
+		if err != nil {
+			s.recordGRPCAuthFailure(ctx, err)
+			if errors.Is(err, auth.ErrForbidden) || errors.Is(err, auth.ErrDeviceScopeForbidden) {
+				return nil, status.Errorf(codes.PermissionDenied, "access forbidden: %v", err)
+			}
+			return nil, status.Errorf(codes.Unauthenticated, "authentication required: %v", err)
+		}
+	}
+
 	limit := 1000
 	if req != nil && req.Limit > 0 {
 		limit = int(req.Limit)
@@ -92,6 +173,17 @@ func (s *ChronoDBGRPCServer) GetDeviceCatalog(ctx context.Context, req *telemetr
 	devices, err := s.engine.GetDeviceCatalog(ctx, limit)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "catalog query failed: %v", err)
+	}
+
+	// Filter device catalog by allowed devices in token
+	if authCtx != nil && len(authCtx.AllowedDevices) > 0 {
+		filtered := make([]*telemetryv1.DeviceCatalogEntry, 0, len(devices))
+		for _, d := range devices {
+			if authCtx.HasAccessToDevice(d.DeviceId) {
+				filtered = append(filtered, d)
+			}
+		}
+		devices = filtered
 	}
 
 	return &telemetryv1.GetDeviceCatalogResponse{

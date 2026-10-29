@@ -130,3 +130,21 @@ simulator:
   profile: "mixed"
   transport: "grpc"
   workers: 4
+
+# Milestone 009: Security & Access Control
+security:
+  networkPolicies:
+    enabled: true
+  secrets:
+    tls:
+      caCert: ""
+      serverCert: ""
+      serverKey: ""
+    apiKeys:
+      deviceKeys: "{}"
+    jwt:
+      secret: ""
+      issuer: "pulse-auth"
+      audience: "pulse-chronodb"
+    webhook:
+      hmacSecret: ""
