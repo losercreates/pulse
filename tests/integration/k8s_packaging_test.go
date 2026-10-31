@@ -38,6 +38,10 @@ func TestDockerfiles_SyntaxAndSecurity(t *testing.T) {
 			expectedPorts: nil,
 			expectedCmd:   "cmd/simulator",
 		},
+		"Dockerfile.bridge": {
+			expectedPorts: []string{"9095"},
+			expectedCmd:   "cmd/bridge",
+		},
 	}
 
 	for file, expected := range expectedDockerfiles {
