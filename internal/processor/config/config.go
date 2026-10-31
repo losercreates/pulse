@@ -19,6 +19,7 @@ type Config struct {
 	TumblingWindowSize time.Duration
 	SlidingWindowSize  time.Duration
 	SlidingSlideSize   time.Duration
+	CEPRulesFile       string
 }
 
 // Load loads stream processor configuration from environment variables with safe defaults.
@@ -46,6 +47,7 @@ func Load() *Config {
 		TumblingWindowSize: getDurationEnv("TUMBLING_WINDOW_SIZE", 10*time.Second),
 		SlidingWindowSize:  getDurationEnv("SLIDING_WINDOW_SIZE", 60*time.Second),
 		SlidingSlideSize:   getDurationEnv("SLIDING_SLIDE_SIZE", 10*time.Second),
+		CEPRulesFile:       getEnv("CEP_RULES_FILE", "deployments/config/cep_rules.yaml"),
 	}
 }
 

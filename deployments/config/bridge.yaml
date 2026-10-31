@@ -1,0 +1,60 @@
+# Pulse Industrial Edge Bridge Configuration
+bridge_id: "bridge-plant-alpha"
+gateway_endpoint: "gateway.pulse.internal:50051"
+metrics_port: ":9095"
+
+# Security & Transport (mTLS)
+tls_client_cert: "certs/bridge.crt"
+tls_client_key: "certs/bridge.key"
+tls_ca_cert: "certs/ca.crt"
+# api_key: "optional-pre-shared-edge-key"
+
+# Store-and-Forward Offline Buffering
+spool_dir: "/var/lib/pulse/bridge"
+max_spool_bytes: 5368709120 # 5 GB
+batch_linger: 10ms
+batch_max_records: 1000
+
+# MQTT Adapters (v3.1.1, v5.0, Sparkplug B)
+mqtt:
+  - name: "plant-mqtt-telemetry"
+    broker_url: "tcp://localhost:1883"
+    client_id: "pulse-bridge-alpha"
+    topics:
+      - "factory/+/+/telemetry"
+    format: "json"
+    topic_pattern: "factory/{area}/{device_id}/telemetry"
+
+  - name: "scada-sparkplug-b"
+    broker_url: "tcp://localhost:1883"
+    client_id: "pulse-bridge-spb"
+    topics:
+      - "spBv1.0/#"
+    format: "sparkplug_b"
+
+# Modbus TCP Polling Adapters
+modbus:
+  - name: "turbine-generator-plc"
+    endpoint: "192.168.1.100:502"
+    slave_id: 1
+    poll_interval: 100ms
+    timeout: 2s
+    registers:
+      - device_id: "turbine-01"
+        metric_name: "bearing_temp"
+        unit: "celsius"
+        function_code: 3 # FC03 Holding Registers
+        start_address: 40001
+        data_type: "float32_be"
+        multiplier: 1.0
+        offset: 0.0
+
+      - device_id: "turbine-01"
+        metric_name: "vibration"
+        unit: "mm/s"
+        function_code: 4 # FC04 Input Registers
+        start_address: 30005
+        data_type: "int16"
+        multiplier: 0.1
+        offset: 0.0
+

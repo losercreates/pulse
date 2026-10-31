@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/losercreates/pulse/internal/alert/detector"
+	"github.com/losercreates/pulse/internal/processor/cep"
 	"github.com/losercreates/pulse/internal/processor/config"
 	"github.com/losercreates/pulse/internal/processor/consumer"
 	"github.com/losercreates/pulse/internal/processor/latesink"
@@ -51,8 +52,19 @@ func main() {
 
 	checkpointMgr := consumer.NewCheckpointManager(consumerGroup, consumerGroup.Client(), cfg.TopicRaw, 1*time.Second)
 
-	// 3. Setup HTTP Observability Server
-	httpServerWrapper := server.NewHTTPServer()
+	// 3. Setup CEP Rule Reloader & HTTP Observability Server
+	var httpOpts []server.HTTPOption
+	if cfg.CEPRulesFile != "" {
+		reloader := cep.NewRuleReloader(cfg.CEPRulesFile, consumerGroup)
+		if rules, err := reloader.Reload(); err == nil {
+			log.Printf("Loaded %d CEP rules from %s", len(rules), cfg.CEPRulesFile)
+		} else {
+			log.Printf("Warning: CEP initial rule load from %s failed: %v", cfg.CEPRulesFile, err)
+		}
+		httpOpts = append(httpOpts, server.WithRuleReloader(reloader))
+	}
+
+	httpServerWrapper := server.NewHTTPServer(httpOpts...)
 	httpServer := &http.Server{
 		Addr:         cfg.HTTPPort,
 		Handler:      httpServerWrapper.Handler(),

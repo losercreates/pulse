@@ -8,6 +8,7 @@ import (
 
 	"github.com/losercreates/pulse/internal/alert/detector"
 	"github.com/losercreates/pulse/internal/alert/incident"
+	"github.com/losercreates/pulse/internal/processor/cep"
 	"github.com/losercreates/pulse/internal/processor/config"
 	"github.com/losercreates/pulse/internal/processor/metrics"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -22,6 +23,7 @@ type PartitionConsumerGroup struct {
 	aggPublisher AggregatePublisher
 	lateSink     LateSink
 	alertPub     detector.AlertPublisher
+	cepRules     []cep.CEPRule
 	metrics      *metrics.Metrics
 
 	mu      sync.RWMutex
@@ -77,6 +79,30 @@ func (g *PartitionConsumerGroup) Client() *kgo.Client {
 // SetAlertPublisher configures the alert event publisher for partition workers.
 func (g *PartitionConsumerGroup) SetAlertPublisher(pub detector.AlertPublisher) {
 	g.alertPub = pub
+}
+
+// SetCEPRules sets the initial complex event processing rules.
+func (g *PartitionConsumerGroup) SetCEPRules(rules []cep.CEPRule) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.cepRules = rules
+}
+
+// ReloadCEPRules live-reloads rules across all active partition workers atomically.
+func (g *PartitionConsumerGroup) ReloadCEPRules(rules []cep.CEPRule) {
+	g.mu.Lock()
+	g.cepRules = rules
+	workers := make([]*PartitionWorker, 0, len(g.workers))
+	for _, aw := range g.workers {
+		workers = append(workers, aw.worker)
+	}
+	g.mu.Unlock()
+
+	for _, w := range workers {
+		if eng := w.CEPEngine(); eng != nil {
+			_ = eng.ReloadRules(rules)
+		}
+	}
 }
 
 // Start begins polling fetches and dispatching them to partition workers.
@@ -175,6 +201,13 @@ func (g *PartitionConsumerGroup) onAssigned(ctx context.Context, client *kgo.Cli
 				det.WithIncidentTracker(tracker)
 				w.SetAlertPipeline(det, g.alertPub)
 			}
+
+			// Instantiate and inject partition-local CEP engine
+			cepEng := cep.NewEngine(partitionID)
+			if len(g.cepRules) > 0 {
+				_ = cepEng.ReloadRules(g.cepRules)
+			}
+			w.SetCEPEngine(cepEng)
 
 			workerCtx, cancel := context.WithCancel(context.Background())
 			done := make(chan struct{})

@@ -1,0 +1,51 @@
+# Pulse Complex Event Processing (CEP) Rules Configuration
+rules:
+  # Multi-stage temporal sequence rule
+  - rule_id: "RULE-BEARING-CASCADE"
+    name: "Bearing Thermal Runaway Cascade"
+    description: "Vibration spike followed by rapid bearing temperature rise within 45 seconds"
+    device_pattern: "turbine-*"
+    window_duration: 45s
+    pattern_type: "SEQUENCE"
+    sequence_steps:
+      - step_index: 0
+        metric_name: "vibration"
+        condition: "z_score >= 3.5"
+        z_score_threshold: 3.5
+      - step_index: 1
+        metric_name: "bearing_temp"
+        condition: ">="
+        threshold: 95.0
+    severity: "CRITICAL"
+    cooldown: 5m
+
+  # Cross-metric arithmetic formula evaluation
+  - rule_id: "RULE-HEAT-RATE-DEGRADATION"
+    name: "Turbine Thermal Efficiency Degradation"
+    description: "Megawatt power generation relative to fuel flow dropped below operating band"
+    device_pattern: "turbine-*"
+    window_duration: 1m
+    pattern_type: "EXPRESSION"
+    expression: "power_mw / fuel_flow < 0.70"
+    severity: "WARNING"
+    cooldown: 10m
+
+  # High pressure surge sequence
+  - rule_id: "RULE-PRESSURE-SURGE-CASCADE"
+    name: "Hydraulic Line Pressure Surge Cascade"
+    description: "Pressure spike followed by rapid fluid temperature surge"
+    device_pattern: "pump-*"
+    window_duration: 30s
+    pattern_type: "SEQUENCE"
+    sequence_steps:
+      - step_index: 0
+        metric_name: "discharge_pressure"
+        condition: ">="
+        threshold: 2500.0
+      - step_index: 1
+        metric_name: "fluid_temp"
+        condition: ">="
+        threshold: 85.0
+    severity: "CRITICAL"
+    cooldown: 3m
+

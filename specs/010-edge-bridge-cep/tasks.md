@@ -9,9 +9,9 @@
 
 **Purpose**: Configuration structures, protocol interfaces, and CEP data types.
 
-- [ ] T001 Create bridge configuration models and environment loader in `internal/bridge/config/config.go`
-- [ ] T002 [P] Define `ProtocolAdapter`, `OfflineSpooler`, and `GatewayForwarder` interfaces in `internal/bridge/adapter/adapter.go`
-- [ ] T003 [P] Define `CEPEngine`, `CEPRule`, and `SequenceCandidate` core types in `internal/processor/cep/types.go`
+- [X] T001 Create bridge configuration models and environment loader in `internal/bridge/config/config.go`
+- [X] T002 [P] Define `ProtocolAdapter`, `OfflineSpooler`, and `GatewayForwarder` interfaces in `internal/bridge/adapter/adapter.go`
+- [X] T003 [P] Define `CEPEngine`, `CEPRule`, and `SequenceCandidate` core types in `internal/processor/cep/types.go`
 
 ---
 
@@ -21,10 +21,10 @@
 
 **⚠️ CRITICAL**: Foundational tasks must be completed before user story implementations.
 
-- [ ] T004 [P] Implement disk-backed FIFO ring buffer spooler with binary framing (`PUBR`) and manifest tracking in `internal/bridge/spooler/spooler.go` and `internal/bridge/spooler/manifest.go`
-- [ ] T005 [P] Implement authenticated mTLS gRPC streaming forwarder client with automatic reconnection and backoff in `internal/bridge/forwarder/forwarder.go`
-- [ ] T006 [P] Implement declarative CEP rule parser and validator for YAML/JSON definitions in `internal/processor/cep/rule.go`
-- [ ] T007 [P] Expose Prometheus metrics for bridge buffer stats, MQTT throughput, and CEP evaluations in `internal/bridge/metrics/metrics.go` and `internal/processor/metrics/metrics.go`
+- [X] T004 [P] Implement disk-backed FIFO ring buffer spooler with binary framing (`PUBR`) and manifest tracking in `internal/bridge/spooler/spooler.go` and `internal/bridge/spooler/manifest.go`
+- [X] T005 [P] Implement authenticated mTLS gRPC streaming forwarder client with automatic reconnection and backoff in `internal/bridge/forwarder/forwarder.go`
+- [X] T006 [P] Implement declarative CEP rule parser and validator for YAML/JSON definitions in `internal/processor/cep/rule.go`
+- [X] T007 [P] Expose Prometheus metrics for bridge buffer stats, MQTT throughput, and CEP evaluations in `internal/bridge/metrics/metrics.go` and `internal/processor/metrics/metrics.go`
 
 **Checkpoint**: Core spooling, gRPC forwarding, and CEP rule compiler ready for protocol and stream integration.
 
@@ -38,14 +38,14 @@
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Create unit tests for MQTT JSON payload decoding, Sparkplug B parsing, and offline spooling in `internal/bridge/adapter/mqtt_test.go` and `internal/bridge/spooler/spooler_test.go`
+- [X] T008 [P] [US1] Create unit tests for MQTT JSON payload decoding, Sparkplug B parsing, and offline spooling in `internal/bridge/adapter/mqtt_test.go` and `internal/bridge/spooler/spooler_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Implement MQTT v3/v5 protocol adapter with topic wildcard subscription and JSON metric mapping in `internal/bridge/adapter/mqtt.go`
-- [ ] T010 [P] [US1] Implement Sparkplug B payload decoder mapping metric aliases and timestamps to `TelemetryReading` in `internal/bridge/adapter/sparkplug.go`
-- [ ] T011 [US1] Implement bridge coordinator pipeline integrating MQTT adapters, offline spooler, and gRPC forwarder in `internal/bridge/coordinator.go`
-- [ ] T012 [US1] Create standalone bridge daemon entrypoint in `cmd/bridge/main.go`
+- [X] T009 [P] [US1] Implement MQTT v3/v5 protocol adapter with topic wildcard subscription and JSON metric mapping in `internal/bridge/adapter/mqtt.go`
+- [X] T010 [P] [US1] Implement Sparkplug B payload decoder mapping metric aliases and timestamps to `TelemetryReading` in `internal/bridge/adapter/sparkplug.go`
+- [X] T011 [US1] Implement bridge coordinator pipeline integrating MQTT adapters, offline spooler, and gRPC forwarder in `internal/bridge/coordinator.go`
+- [X] T012 [US1] Create standalone bridge daemon entrypoint in `cmd/bridge/main.go`
 
 **Checkpoint**: Standalone `pulse-bridge` operational with MQTT/Sparkplug B ingestion, offline store-and-forward spooling, and mTLS gRPC forwarding (MVP).
 
@@ -59,12 +59,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Create unit tests for Modbus TCP register polling, data type decoding (int16, float32_be/le), and scaling in `internal/bridge/adapter/modbus_test.go`
+- [X] T013 [P] [US2] Create unit tests for Modbus TCP register polling, data type decoding (int16, float32_be/le), and scaling in `internal/bridge/adapter/modbus_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T014 [P] [US2] Implement Modbus TCP master client with FC03/FC04 register polling, endian decoding, and linear scaling in `internal/bridge/adapter/modbus.go`
-- [ ] T015 [US2] Integrate Modbus adapter into bridge coordinator in `internal/bridge/coordinator.go`
+- [X] T014 [P] [US2] Implement Modbus TCP master client with FC03/FC04 register polling, endian decoding, and linear scaling in `internal/bridge/adapter/modbus.go`
+- [X] T015 [US2] Integrate Modbus adapter into bridge coordinator in `internal/bridge/coordinator.go`
 
 **Checkpoint**: Legacy Modbus TCP PLCs actively polled and normalized alongside MQTT streams.
 
@@ -78,13 +78,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T016 [P] [US3] Create unit tests for sequence matching, event-time sliding windows, and watermark expiration in `internal/processor/cep/sequence_test.go`
+- [X] T016 [P] [US3] Create unit tests for sequence matching, event-time sliding windows, and watermark expiration in `internal/processor/cep/sequence_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T017 [P] [US3] Implement NFA sequence pattern matcher and in-flight candidate state machine in `internal/processor/cep/sequence.go`
-- [ ] T018 [P] [US3] Implement watermark-based candidate cleanup and memory bounds in `internal/processor/cep/candidate.go`
-- [ ] T019 [US3] Integrate CEP engine into partition consumer loop in `internal/processor/consumer/consumer.go`
+- [X] T017 [P] [US3] Implement NFA sequence pattern matcher and in-flight candidate state machine in `internal/processor/cep/sequence.go`
+- [X] T018 [P] [US3] Implement watermark-based candidate cleanup and memory bounds in `internal/processor/cep/candidate.go`
+- [X] T019 [US3] Integrate CEP engine into partition consumer loop in `internal/processor/consumer/consumer.go`
 
 **Checkpoint**: Stream processor executes zero-lock partition-local temporal sequence evaluations.
 
@@ -98,13 +98,13 @@
 
 ### Tests for User Story 4
 
-- [ ] T020 [P] [US4] Create unit tests for arithmetic expression parsing, composite incident synthesis, and dynamic rule reload in `internal/processor/cep/expression_test.go` and `internal/processor/cep/reload_test.go`
+- [X] T020 [P] [US4] Create unit tests for arithmetic expression parsing, composite incident synthesis, and dynamic rule reload in `internal/processor/cep/expression_test.go` and `internal/processor/cep/reload_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T021 [P] [US4] Implement cross-metric arithmetic expression tokenizer and AST evaluator in `internal/processor/cep/expression.go`
-- [ ] T022 [US4] Implement composite incident synthesizer producing structured `CompositeIncidentEvent` alerts to `telemetry.alerts` in `internal/processor/cep/synthesizer.go`
-- [ ] T023 [US4] Implement live atomic rule registry swap and administrative reload handler (`POST /api/v1/rules/reload` & SIGHUP) in `internal/processor/cep/reload.go` and `internal/processor/server/http.go`
+- [X] T021 [P] [US4] Implement cross-metric arithmetic expression tokenizer and AST evaluator in `internal/processor/cep/expression.go`
+- [X] T022 [US4] Implement composite incident synthesizer producing structured `CompositeIncidentEvent` alerts to `telemetry.alerts` in `internal/processor/cep/synthesizer.go`
+- [X] T023 [US4] Implement live atomic rule registry swap and administrative reload handler (`POST /api/v1/rules/reload` & SIGHUP) in `internal/processor/cep/reload.go` and `internal/processor/server/http.go`
 
 **Checkpoint**: Advanced multivariate arithmetic and noise-reducing composite incident synthesis operational with live rule reloading.
 
@@ -114,11 +114,11 @@
 
 **Purpose**: Developer tooling, build targets, documentation, and end-to-end race validation.
 
-- [ ] T024 [P] Create sample configuration manifests in `deployments/config/bridge.yaml` and `deployments/config/cep_rules.yaml`
-- [ ] T025 [P] Create end-to-end integration test validating Bridge $\rightarrow$ Gateway $\rightarrow$ Redpanda $\rightarrow$ Processor with CEP $\rightarrow$ Alertd in `tests/integration/edge_cep_test.go`
-- [ ] T026 [P] Update `Makefile` with targets for bridge binary build (`cmd/bridge`), Docker packaging (`Dockerfile.bridge`), and CEP tests
-- [ ] T027 [P] Update `README.md` with Milestone 010 documentation, protocol bridge configuration, and CEP rule guide
-- [ ] T028 Execute full test suite including `-race` and benchmark verification
+- [X] T024 [P] Create sample configuration manifests in `deployments/config/bridge.yaml` and `deployments/config/cep_rules.yaml`
+- [X] T025 [P] Create end-to-end integration test validating Bridge $\rightarrow$ Gateway $\rightarrow$ Redpanda $\rightarrow$ Processor with CEP $\rightarrow$ Alertd in `tests/integration/edge_cep_test.go`
+- [X] T026 [P] Update `Makefile` with targets for bridge binary build (`cmd/bridge`), Docker packaging (`Dockerfile.bridge`), and CEP tests
+- [X] T027 [P] Update `README.md` with Milestone 010 documentation, protocol bridge configuration, and CEP rule guide
+- [X] T028 Execute full test suite including `-race` and benchmark verification
 
 ---
 

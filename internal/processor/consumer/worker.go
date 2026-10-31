@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/losercreates/pulse/internal/alert/detector"
+	"github.com/losercreates/pulse/internal/processor/cep"
 	"github.com/losercreates/pulse/internal/processor/metrics"
 	"github.com/losercreates/pulse/internal/processor/watermark"
 	"github.com/losercreates/pulse/internal/processor/window"
@@ -38,6 +39,7 @@ type PartitionWorker struct {
 	lateSink      LateSink
 	detector      *detector.AnomalyDetector
 	alertPub      detector.AlertPublisher
+	cepEngine     cep.CEPEngine
 	metrics       *metrics.Metrics
 	idleCheckTick time.Duration
 
@@ -103,6 +105,16 @@ func (w *PartitionWorker) HighOffset() int64 {
 func (w *PartitionWorker) SetAlertPipeline(det *detector.AnomalyDetector, pub detector.AlertPublisher) {
 	w.detector = det
 	w.alertPub = pub
+}
+
+// SetCEPEngine injects the partition-local Complex Event Processing engine (Constitution Principle I).
+func (w *PartitionWorker) SetCEPEngine(engine cep.CEPEngine) {
+	w.cepEngine = engine
+}
+
+// CEPEngine returns the partition's active CEP engine.
+func (w *PartitionWorker) CEPEngine() cep.CEPEngine {
+	return w.cepEngine
 }
 
 // Run executes the partition-local consumption loop until ctx is cancelled.
@@ -171,9 +183,31 @@ func (w *PartitionWorker) processRecord(ctx context.Context, record *kgo.Record,
 	w.windowMgr.ProcessReading(eventTimeNs, reading.DeviceId, reading.MetricName, reading.Value)
 
 	// Real-time statistical anomaly detection with zero hot-path locks (Constitution Principle I & IV)
+	var zScore float64
 	if w.detector != nil && w.alertPub != nil {
 		if alert := w.detector.ProcessReading(reading.DeviceId, reading.MetricName, reading.Value, eventTimeNs, w.partitionID); alert != nil {
+			zScore = alert.ZScore
 			_ = w.alertPub.PublishAlert(ctx, alert)
+		}
+	}
+
+	// Complex Event Processing (CEP) sequence and expression evaluation (Constitution Principle I & II)
+	if w.cepEngine != nil {
+		cepAlerts := w.cepEngine.ProcessReading(&reading, zScore)
+		for _, cepAlert := range cepAlerts {
+			if w.alertPub != nil {
+				_ = w.alertPub.PublishAlert(ctx, cepAlert)
+			}
+			if w.metrics != nil {
+				w.metrics.CEPEvaluationsTotal.WithLabelValues(cepAlert.AlertId, "matched").Inc()
+				w.metrics.CEPIncidentsSynthesizedTotal.WithLabelValues(cepAlert.AlertId, cepAlert.Severity.String()).Inc()
+			}
+		}
+
+		// Advance watermark for CEP candidate expiration
+		w.cepEngine.AdvanceWatermark(w.watermark.CurrentWatermark())
+		if w.metrics != nil {
+			w.metrics.CEPCandidatesActive.WithLabelValues(partStr).Set(float64(w.cepEngine.ActiveCandidatesCount()))
 		}
 	}
 
@@ -196,6 +230,13 @@ func (w *PartitionWorker) checkIdleAndAdvance(ctx context.Context, partStr strin
 	if advanced, newWM := w.watermark.CheckIdleTimeout(time.Now()); advanced {
 		emitted := w.windowMgr.AdvanceWatermark(newWM)
 		w.publishAggregates(ctx, emitted, partStr)
+
+		if w.cepEngine != nil {
+			w.cepEngine.AdvanceWatermark(newWM)
+			if w.metrics != nil {
+				w.metrics.CEPCandidatesActive.WithLabelValues(partStr).Set(float64(w.cepEngine.ActiveCandidatesCount()))
+			}
+		}
 
 		if w.metrics != nil {
 			lagSeconds := float64(time.Now().UnixNano()-newWM) / 1e9

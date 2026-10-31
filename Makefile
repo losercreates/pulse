@@ -1,4 +1,4 @@
-.PHONY: proto up down obs-up obs-down dashboards test bench build run clean e2e sim docker-build helm-lint helm-template k8s-verify certs test-security
+.PHONY: proto up down obs-up obs-down dashboards test bench build run clean e2e sim docker-build helm-lint helm-template k8s-verify certs test-security test-edge-cep
 
 GO ?= go
 PROTOC ?= protoc
@@ -58,6 +58,7 @@ build:
 	$(GO) build -o bin/alertd ./cmd/alertd
 	$(GO) build -o bin/chronod ./cmd/chronod
 	$(GO) build -o bin/simulator ./cmd/simulator
+	$(GO) build -o bin/bridge ./cmd/bridge
 
 run: build
 	./bin/gateway
@@ -71,6 +72,11 @@ docker-build:
 	docker build -t pulse-alertd:latest -f deployments/docker/Dockerfile.alertd .
 	docker build -t pulse-chronod:latest -f deployments/docker/Dockerfile.chronod .
 	docker build -t pulse-simulator:latest -f deployments/docker/Dockerfile.simulator .
+	docker build -t pulse-bridge:latest -f deployments/docker/Dockerfile.bridge .
+
+test-edge-cep:
+	$(GO) test -v -race ./internal/bridge/... ./internal/processor/cep/...
+	$(GO) test -v -race -run "EdgeBridge|CEP" ./tests/integration/...
 
 helm-lint:
 	helm lint deployments/helm/pulse

@@ -14,6 +14,12 @@ type Metrics struct {
 	EmittedAggregatesTotal     *prometheus.CounterVec
 	WindowCloseLatencySeconds  *prometheus.HistogramVec
 	ConsumerLag                *prometheus.GaugeVec
+
+	// Complex Event Processing (CEP) Engine metrics
+	CEPEvaluationsTotal         *prometheus.CounterVec
+	CEPCandidatesActive         *prometheus.GaugeVec
+	CEPCandidatesExpiredTotal   *prometheus.CounterVec
+	CEPIncidentsSynthesizedTotal *prometheus.CounterVec
 }
 
 // New creates and registers Prometheus metrics for the stream processor.
@@ -84,6 +90,42 @@ func New(reg prometheus.Registerer) *Metrics {
 				Help:      "Consumer offset lag behind partition high watermark.",
 			},
 			[]string{"partition"},
+		),
+		CEPEvaluationsTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "cep",
+				Name:      "evaluations_total",
+				Help:      "Total count of CEP rule evaluations by rule and match status.",
+			},
+			[]string{"rule_id", "status"},
+		),
+		CEPCandidatesActive: factory.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: "pulse",
+				Subsystem: "cep",
+				Name:      "candidates_active",
+				Help:      "Count of active, in-flight CEP sequence candidates per partition.",
+			},
+			[]string{"partition"},
+		),
+		CEPCandidatesExpiredTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "cep",
+				Name:      "candidates_expired_total",
+				Help:      "Total count of CEP sequence candidates expired due to watermark advancement.",
+			},
+			[]string{"partition", "rule_id"},
+		),
+		CEPIncidentsSynthesizedTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "cep",
+				Name:      "incidents_synthesized_total",
+				Help:      "Total count of synthesized composite incidents emitted to alerting.",
+			},
+			[]string{"rule_id", "severity"},
 		),
 	}
 }

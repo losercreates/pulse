@@ -260,6 +260,31 @@ Milestone 009 implements defense-in-depth perimeter security, client identity an
 
 ---
 
+## Milestone 010: Industrial Edge Bridge & Complex Event Processing (CEP) Engine
+
+Milestone 010 implements the industrial edge translation daemon (`pulse-bridge`) and the in-memory Complex Event Processing (CEP) rule engine conforming strictly to Constitution Principles I–V:
+1. **Industrial Edge Bridge Daemon (`pulse-bridge`)**:
+   - **MQTT v3.1.1 / v5.0 Support**: Subscribes to industrial broker topics with single-level (`+`) and multi-level (`#`) wildcards, dynamic topic variable extraction (`{device_id}`, `{metric}`), and JSON payload normalization.
+   - **Sparkplug B Payload Parsing**: Decodes standard industrial IoT Sparkplug B binary protobuf frames (`NBIRTH`, `NDATA`, `DBIRTH`, `DDATA`), extracting typed metrics and timestamps into canonical Pulse `TelemetryReading` messages.
+   - **Modbus TCP Master Engine**: Cyclically polls legacy PLCs via Function Codes 03 (Holding Registers) and 04 (Input Registers) with configurable timeouts, linear scaling equations ($y = \text{raw} \times m + c$), and multi-word endian conversions (`int16`, `uint16`, `int32`, `uint32`, `float32_be`, `float32_le`, `float32_swap`).
+2. **Store-and-Forward Offline Buffering**:
+   - Dual-tier buffering: In-memory absorption queue + append-only disk FIFO log (`/var/lib/pulse/bridge` or `/tmp/pulse-bridge-spool`).
+   - Crash-resilient binary framing (`PUBR` 16-byte header with IEEE CRC32 checksum) and atomic manifest tracking (`manifest.json`) guaranteeing zero data loss during process termination or edge network partition.
+   - Strict chronological backfill: Streams historical spooled records in event-time order over mTLS gRPC (`:50051`) upon reconnect, maintaining deterministic watermark progression.
+3. **Partition-Local Complex Event Processing (CEP) Engine**:
+   - Zero-lock stateful pattern matching running directly inside `pulse-processor` partition worker goroutines (Constitution Principle I).
+   - Evaluates multi-stage temporal sequences (`EventA FOLLOWED_BY EventB WITHIN ΔT`) with event-time ordering.
+   - Deterministic candidate expiration governed by partition event-time watermarks (Constitution Principle II).
+   - Cross-metric mathematical expression evaluator supporting multivariate formulas (e.g. `power_mw / fuel_flow < 0.70`).
+4. **Composite Incident Synthesis & Live Rule Reloading**:
+   - Synthesizes cascading multi-metric alarms into structured `CompositeIncidentEvent` notifications, reducing downstream alarm noise by $\ge 90\%$ and routing to `telemetry.alerts` for `alertd` (Constitution Principle IV).
+   - Live atomic rule registry swapping via administrative REST endpoint (`POST /api/v1/rules/reload`) and `SIGHUP` signal without stream processor downtime.
+5. **Edge Bridge & CEP Commands**:
+   - `make test-edge-cep`: Executes unit and integration test suites for protocol bridge and CEP pattern matcher.
+   - `./bin/bridge --config deployments/config/bridge.yaml`: Launches standalone edge bridge daemon.
+
+---
+
 ## Quickstart
 
 ### 1. Start Redpanda Cluster
@@ -289,6 +314,9 @@ make build
 
 # Start ChronoDB Storage Sink & Query Service (HTTP :8084, gRPC :50054)
 ./bin/chronod
+
+# Start Industrial Edge Bridge (HTTP :9095)
+./bin/bridge --config deployments/config/bridge.yaml
 ```
 
 ### 4. Test Ingestion, Queries & Observability
@@ -363,6 +391,7 @@ make obs-down
 ```bash
 make test
 make test-security   # Runs mTLS, anti-spoofing, RBAC, and Webhook HMAC tests
+make test-edge-cep   # Runs Edge Bridge and CEP engine test suites
 make bench
 make e2e
 make sim             # Runs 50k events/sec simulator load test
