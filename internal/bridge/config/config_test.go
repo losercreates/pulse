@@ -54,6 +54,15 @@ modbus:
         data_type: float32_be
         multiplier: 0.1
         offset: 0.0
+opcua:
+  - name: test-opcua
+    endpoint: opc.tcp://127.0.0.1:4840
+    security_policy: None
+    publish_interval: 100ms
+    nodes:
+      - node_id: ns=2;s=Turbine.RPM
+        device_id: turbine-01
+        metric_name: speed
 `
 	require.NoError(t, os.WriteFile(configFile, []byte(yamlContent), 0600))
 
@@ -76,6 +85,12 @@ modbus:
 	assert.Equal(t, uint8(1), cfg.ModbusAdapters[0].SlaveID)
 	require.Len(t, cfg.ModbusAdapters[0].Registers, 1)
 	assert.Equal(t, "oil_temp", cfg.ModbusAdapters[0].Registers[0].MetricName)
+
+	require.Len(t, cfg.OPCUAAdapters, 1)
+	assert.Equal(t, "test-opcua", cfg.OPCUAAdapters[0].Name)
+	assert.Equal(t, "opc.tcp://127.0.0.1:4840", cfg.OPCUAAdapters[0].Endpoint)
+	require.Len(t, cfg.OPCUAAdapters[0].Nodes, 1)
+	assert.Equal(t, "turbine-01", cfg.OPCUAAdapters[0].Nodes[0].DeviceID)
 }
 
 func TestLoad_EnvOverrides(t *testing.T) {

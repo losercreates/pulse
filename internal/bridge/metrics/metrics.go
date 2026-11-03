@@ -16,6 +16,12 @@ type BridgeMetrics struct {
 	SpoolWritesTotal      prometheus.Counter
 	SpoolReadsTotal       prometheus.Counter
 	ConnectedStatus       *prometheus.GaugeVec
+	OPCUASubscriptions    *prometheus.GaugeVec
+	OPCUAMonitoredItems   *prometheus.GaugeVec
+	OPCUANotificationsTotal *prometheus.CounterVec
+	OPCUAConnectionState  *prometheus.GaugeVec
+	OPCUAErrorsTotal      *prometheus.CounterVec
+	OPCUABrowseDurationSeconds *prometheus.HistogramVec
 }
 
 // NewBridgeMetrics registers and returns BridgeMetrics.
@@ -99,6 +105,61 @@ func NewBridgeMetrics(reg prometheus.Registerer) *BridgeMetrics {
 				Help:      "Connection state (1 = connected, 0 = disconnected).",
 			},
 			[]string{"target"},
+		),
+		OPCUASubscriptions: factory.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: "pulse",
+				Subsystem: "bridge_opcua",
+				Name:      "active_subscriptions",
+				Help:      "Count of active OPC-UA server subscriptions.",
+			},
+			[]string{"adapter"},
+		),
+		OPCUAMonitoredItems: factory.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: "pulse",
+				Subsystem: "bridge_opcua",
+				Name:      "monitored_items_total",
+				Help:      "Total registered monitored items across all sessions.",
+			},
+			[]string{"adapter"},
+		),
+		OPCUANotificationsTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "bridge_opcua",
+				Name:      "notifications_total",
+				Help:      "Total data change notifications received from server.",
+			},
+			[]string{"adapter", "status"},
+		),
+		OPCUAConnectionState: factory.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: "pulse",
+				Subsystem: "bridge_opcua",
+				Name:      "connection_state",
+				Help:      "Connection state (0=Disconnected, 1=Connecting, 2=Connected, 3=Subscribed).",
+			},
+			[]string{"adapter"},
+		),
+		OPCUAErrorsTotal: factory.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "pulse",
+				Subsystem: "bridge_opcua",
+				Name:      "errors_total",
+				Help:      "Counter of OPC-UA protocol, network, and timeout errors.",
+			},
+			[]string{"adapter", "type"},
+		),
+		OPCUABrowseDurationSeconds: factory.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: "pulse",
+				Subsystem: "bridge_opcua",
+				Name:      "browse_duration_seconds",
+				Help:      "Latency distribution of address space discovery browsing.",
+				Buckets:   []float64{0.005, 0.010, 0.025, 0.050, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0},
+			},
+			[]string{"adapter"},
 		),
 	}
 }

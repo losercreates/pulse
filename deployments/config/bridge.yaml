@@ -58,3 +58,34 @@ modbus:
         multiplier: 0.1
         offset: 0.0
 
+# Native OPC-UA Binary Fieldbus Adapters
+opcua:
+  - name: "boiler-opcua-server"
+    endpoint: "opc.tcp://192.168.1.120:4840"
+    security_policy: "None" # None | Basic256Sha256
+    security_mode: "None"   # None | Sign | SignAndEncrypt
+    auth_mode: "anonymous"  # anonymous | username | certificate
+    publish_interval: 100ms
+    keep_alive_interval: 5s
+    connect_timeout: 5s
+    nodes:
+      - node_id: "ns=2;s=Boiler.SteamPressure"
+        device_id: "boiler-01"
+        metric_name: "steam_pressure_bar"
+        sampling_interval: 50ms
+        queue_size: 10
+        discard_oldest: true
+      - node_id: "ns=2;s=Boiler.FlameTemp"
+        device_id: "boiler-01"
+        metric_name: "flame_temp_celsius"
+        deadband_type: "Absolute"
+        deadband_value: 0.5
+    discovery:
+      enabled: true
+      root_node_id: "ns=0;i=85"
+      path_filter: "Objects/Boiler/*"
+      max_depth: 5
+      auto_subscribe: true
+      default_device_id: "boiler-01"
+
+

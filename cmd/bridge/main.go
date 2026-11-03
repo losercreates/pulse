@@ -13,6 +13,7 @@ import (
 
 	"github.com/losercreates/pulse/internal/bridge"
 	"github.com/losercreates/pulse/internal/bridge/adapter"
+	"github.com/losercreates/pulse/internal/bridge/adapter/opcua"
 	"github.com/losercreates/pulse/internal/bridge/config"
 	"github.com/losercreates/pulse/internal/bridge/forwarder"
 	"github.com/losercreates/pulse/internal/bridge/metrics"
@@ -82,6 +83,14 @@ func main() {
 		ad, err := adapter.NewModbusAdapter(modCfg)
 		if err != nil {
 			log.Fatalf("failed to create Modbus adapter %s: %v", modCfg.Name, err)
+		}
+		adapters = append(adapters, ad)
+	}
+
+	for _, opcCfg := range cfg.OPCUAAdapters {
+		ad, err := opcua.NewAdapter(opcCfg, m)
+		if err != nil {
+			log.Fatalf("failed to create OPC-UA adapter %s: %v", opcCfg.Name, err)
 		}
 		adapters = append(adapters, ad)
 	}

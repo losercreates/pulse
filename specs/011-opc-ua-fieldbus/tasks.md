@@ -9,9 +9,9 @@
 
 **Purpose**: Configuration structures, OPC-UA protocol types, and Prometheus metric instrumentation.
 
-- [ ] T001 Extend bridge configuration models and YAML parser with `OPCUAAdapterConfig`, `MonitoredItemConfig`, and `DiscoveryConfig` in `internal/bridge/config/config.go`
-- [ ] T002 [P] Implement core OPC-UA data types, NodeID representations, Variant encoders/decoders, and StatusCode lookups in `internal/bridge/adapter/opcua/types.go`
-- [ ] T003 [P] Register OPC-UA Prometheus gauges, counters, and histograms (`pulse_bridge_opcua_*`) in `internal/bridge/metrics/metrics.go`
+- [X] T001 Extend bridge configuration models and YAML parser with `OPCUAAdapterConfig`, `MonitoredItemConfig`, and `DiscoveryConfig` in `internal/bridge/config/config.go`
+- [X] T002 [P] Implement core OPC-UA data types, NodeID representations, Variant encoders/decoders, and StatusCode lookups in `internal/bridge/adapter/opcua/types.go`
+- [X] T003 [P] Register OPC-UA Prometheus gauges, counters, and histograms (`pulse_bridge_opcua_*`) in `internal/bridge/metrics/metrics.go`
 
 ---
 
@@ -21,9 +21,9 @@
 
 **⚠️ CRITICAL**: Foundational tasks must be completed before user story implementation.
 
-- [ ] T004 [P] Implement OPC-UA TCP binary wire framing (`HEL`/`ACK`, `OPN`, `MSG` headers, chunking, and byte ordering) in `internal/bridge/adapter/opcua/binary.go`
-- [ ] T005 [P] Implement SecureChannel handshake, security token negotiation, and session state machine in `internal/bridge/adapter/opcua/channel.go`
-- [ ] T006 [P] Create mock OPC-UA TCP binary server test harness for deterministic protocol unit tests in `internal/bridge/adapter/opcua/mock_server_test.go`
+- [X] T004 [P] Implement OPC-UA TCP binary wire framing (`HEL`/`ACK`, `OPN`, `MSG` headers, chunking, and byte ordering) in `internal/bridge/adapter/opcua/binary.go`
+- [X] T005 [P] Implement SecureChannel handshake, security token negotiation, and session state machine in `internal/bridge/adapter/opcua/channel.go`
+- [X] T006 [P] Create mock OPC-UA TCP binary server test harness for deterministic protocol unit tests in `internal/bridge/adapter/opcua/mock_server_test.go`
 
 **Checkpoint**: Foundation ready — binary communication channel can establish and authenticate with OPC-UA endpoints.
 
@@ -37,14 +37,14 @@
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Create unit tests for subscription request creation, monitored item registration, and `DataChangeNotification` decoding in `internal/bridge/adapter/opcua/subscription_test.go`
+- [X] T007 [P] [US1] Create unit tests for subscription request creation, monitored item registration, and `DataChangeNotification` decoding in `internal/bridge/adapter/opcua/subscription_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Implement `CreateSubscriptionRequest` and `CreateMonitoredItemsRequest` protocol builders in `internal/bridge/adapter/opcua/subscription.go`
-- [ ] T009 [US1] Implement pipelined `PublishRequest` dispatch loop and `DataChangeNotification` payload unpacker in `internal/bridge/adapter/opcua/publish.go`
-- [ ] T010 [US1] Implement `Adapter` struct fulfilling the `adapter.ProtocolAdapter` interface (`Name`, `Start`, `Stop`, `Status`) in `internal/bridge/adapter/opcua/adapter.go`
-- [ ] T011 [US1] Integrate OPC-UA adapter instantiation into bridge coordinator and daemon entrypoint in `internal/bridge/coordinator.go` and `cmd/bridge/main.go`
+- [X] T008 [P] [US1] Implement `CreateSubscriptionRequest` and `CreateMonitoredItemsRequest` protocol builders in `internal/bridge/adapter/opcua/subscription.go`
+- [X] T009 [US1] Implement pipelined `PublishRequest` dispatch loop and `DataChangeNotification` payload unpacker in `internal/bridge/adapter/opcua/publish.go`
+- [X] T010 [US1] Implement `Adapter` struct fulfilling the `adapter.ProtocolAdapter` interface (`Name`, `Start`, `Stop`, `Status`) in `internal/bridge/adapter/opcua/adapter.go`
+- [X] T011 [US1] Integrate OPC-UA adapter instantiation into bridge coordinator and daemon entrypoint in `internal/bridge/coordinator.go` and `cmd/bridge/main.go`
 
 **Checkpoint**: User Story 1 operational. Standalone `pulse-bridge` streams real-time OPC-UA subscription telemetry to `pulse-gateway` (MVP complete).
 
@@ -58,12 +58,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T012 [P] [US2] Create unit tests for keep-alive timeouts, exponential backoff reconnection loops, and offline spooler diversion in `internal/bridge/adapter/opcua/resilience_test.go`
+- [X] T012 [P] [US2] Create unit tests for keep-alive timeouts, exponential backoff reconnection loops, and offline spooler diversion in `internal/bridge/adapter/opcua/resilience_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Implement keep-alive heartbeat monitor and automatic subscription recovery in `internal/bridge/adapter/opcua/channel.go`
-- [ ] T014 [US2] Implement seamless disk FIFO spooler handoff and operational status tracking during upstream network partitions in `internal/bridge/adapter/opcua/adapter.go`
+- [X] T013 [US2] Implement keep-alive heartbeat monitor and automatic subscription recovery in `internal/bridge/adapter/opcua/channel.go`
+- [X] T014 [US2] Implement seamless disk FIFO spooler handoff and operational status tracking during upstream network partitions in `internal/bridge/adapter/opcua/adapter.go`
 
 **Checkpoint**: User Story 2 operational. Industrial edge bridge survives field network disconnects, server restarts, and upstream WAN outages without telemetry loss.
 
@@ -77,12 +77,12 @@
 
 ### Tests for User Story 3
 
-- [ ] T015 [P] [US3] Create unit tests for `Browse` service request encoding, response decoding, and circular reference detection in `internal/bridge/adapter/opcua/browse_test.go`
+- [X] T015 [P] [US3] Create unit tests for `Browse` service request encoding, response decoding, and circular reference detection in `internal/bridge/adapter/opcua/browse_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T016 [US3] Implement recursive address space crawler with depth limits, reference type filtering, and glob path matching in `internal/bridge/adapter/opcua/browse.go`
-- [ ] T017 [US3] Integrate dynamic discovery into adapter startup lifecycle and register discovered items with active subscriptions in `internal/bridge/adapter/opcua/adapter.go`
+- [X] T016 [US3] Implement recursive address space crawler with depth limits, reference type filtering, and glob path matching in `internal/bridge/adapter/opcua/browse.go`
+- [X] T017 [US3] Integrate dynamic discovery into adapter startup lifecycle and register discovered items with active subscriptions in `internal/bridge/adapter/opcua/adapter.go`
 
 **Checkpoint**: User Story 3 operational. Plant commissioning engineers can onboard complex PLCs via path patterns without manually entering hundreds of NodeIDs.
 
@@ -96,12 +96,12 @@
 
 ### Tests for User Story 4
 
-- [ ] T018 [P] [US4] Create unit tests for security token exchange, asymmetric signature validation, and identity token encoding in `internal/bridge/adapter/opcua/security_test.go`
+- [X] T018 [P] [US4] Create unit tests for security token exchange, asymmetric signature validation, and identity token encoding in `internal/bridge/adapter/opcua/security_test.go`
 
 ### Implementation for User Story 4
 
-- [ ] T019 [US4] Implement `Basic256Sha256` symmetric and asymmetric encryption, signature verification, and certificate validation in `internal/bridge/adapter/opcua/security.go`
-- [ ] T020 [US4] Implement UserIdentityToken builders (Anonymous, UserNameIdentityToken, X509IdentityToken) in `internal/bridge/adapter/opcua/auth.go`
+- [X] T019 [US4] Implement `Basic256Sha256` symmetric and asymmetric encryption, signature verification, and certificate validation in `internal/bridge/adapter/opcua/security.go`
+- [X] T020 [US4] Implement UserIdentityToken builders (Anonymous, UserNameIdentityToken, X509IdentityToken) in `internal/bridge/adapter/opcua/auth.go`
 
 **Checkpoint**: User Story 4 operational. Edge bridge complies with ISA/IEC 62443 fieldbus encryption and authentication requirements.
 
@@ -111,10 +111,10 @@
 
 **Purpose**: End-to-end integration tests, throughput benchmarks, documentation, and configuration samples.
 
-- [ ] T021 [P] Implement end-to-end integration test validating OPC-UA adapter, bridge coordinator, offline disk spooler, and gateway in `tests/integration/bridge_opcua_test.go`
-- [ ] T022 [P] Implement high-frequency notification decoding benchmark ($\ge 25,000\text{ ev/s}$) in `internal/bridge/adapter/opcua/opcua_bench_test.go`
-- [ ] T023 Update reference bridge configuration in `configs/bridge.yaml` with documented OPC-UA adapter configuration blocks
-- [ ] T024 Validate all quickstart verification scenarios documented in `specs/011-opc-ua-fieldbus/quickstart.md`
+- [X] T021 [P] Implement end-to-end integration test validating OPC-UA adapter, bridge coordinator, offline disk spooler, and gateway in `tests/integration/bridge_opcua_test.go`
+- [X] T022 [P] Implement high-frequency notification decoding benchmark ($\ge 25,000\text{ ev/s}$) in `internal/bridge/adapter/opcua/opcua_bench_test.go`
+- [X] T023 Update reference bridge configuration in `configs/bridge.yaml` with documented OPC-UA adapter configuration blocks
+- [X] T024 Validate all quickstart verification scenarios documented in `specs/011-opc-ua-fieldbus/quickstart.md`
 
 ---
 

@@ -18,11 +18,11 @@ This document tracks the architectural progression, completed milestones, and fo
 | **v0.8.0** | **008: ChronoDB Storage Durability** | Embedded LSM engine, WAL durability, SSTables & StatefulSets | **Completed** |
 | **v0.9.0** | **009: Security & Access Control** | mTLS, device anti-spoofing, ChronoDB JWT RBAC & HMAC webhooks | **Completed** |
 | **v1.0.0** | **010: Edge Bridge & CEP Engine** | MQTT/Sparkplug/Modbus bridge, disk spooler & partition-local CEP | **Completed** |
-| **v1.1.0** | **011: Native OPC-UA Fieldbus Adapter** | Direct binary OPC-UA monitored items & dynamic node discovery | *Planned* |
+| **v1.1.0** | **011: Native OPC-UA Fieldbus Adapter** | Direct binary OPC-UA monitored items & dynamic node discovery | **Completed** |
 
 ---
 
-## Completed Milestones (v0.1.0 – v1.0.0)
+## Completed Milestones (v0.1.0 – v1.1.0)
 
 ### Milestone 001: Ingestion Gateway & Broker Setup (v0.1.0)
 - **Standardized Protobuf Schema**: Canonical `TelemetryReading` binary wire contract with nanosecond temporal precision (`timestamp_ns`).
@@ -94,15 +94,13 @@ This document tracks the architectural progression, completed milestones, and fo
 - **Cross-Metric Expressions & Incident Synthesis**: AST evaluator for multivariate formulas (e.g. `power_mw / fuel_flow < 0.70`) and composite incident synthesis collapsing cascading alarms into single root-cause alerts ($\ge 90\%$ noise reduction).
 - **Live Rule Reloading**: Administrative endpoint (`POST /api/v1/rules/reload`) and `SIGHUP` signal handler performing atomic rule registry swaps without stream processor downtime.
 
----
-
-## Future Horizon & Upcoming Milestones
-
 ### Milestone 011: Native OPC-UA Binary Fieldbus Adapter (v1.1.0)
-- **Direct OPC-UA Driver**: Pure Go binary protocol implementation for OPC-UA in `pulse-bridge`.
-- **Monitored Items & Subscriptions**: Real-time publish/subscribe monitored items replacing cyclic polling loops.
-- **Dynamic Node Discovery**: Automatic PLC address space traversal and variable browsal.
-- **Store-and-Forward Spooling Integration**: Seamless handoff of OPC-UA telemetry into the existing disk-backed FIFO spooler during edge WAN disconnects.
+- **Direct OPC-UA Binary Driver**: Pure Go binary protocol implementation for OPC-UA (`opc.tcp://`) in `pulse-bridge` without external CGo or runtime C dependencies.
+- **Monitored Items & Subscriptions**: Event-driven server subscriptions (`CreateSubscription`, `CreateMonitoredItems`, and pipelined `PublishRequest` loops) streaming `DataChangeNotification` frames with nanosecond timestamp precision.
+- **Dynamic Address Space Discovery**: Recursive `Browse` crawler with visited cycle detection and path glob matching (`Objects/Turbine/*/*`) for automatic tag discovery and auto-subscription.
+- **Resilient Connection State Machine & Keep-Alives**: Heartbeat monitoring detecting dropped links or server reboots with exponential backoff session reconstitution.
+- **Store-and-Forward Spooling Integration**: Seamless handoff of OPC-UA telemetry into the local append-only disk FIFO spooler (`PUBR` CRC32 framing) during upstream gateway disconnects, flushing in chronological order upon reconnection.
+- **Industrial Cybersecurity**: Support for `None` and `Basic256Sha256` security policies (`SignAndEncrypt`) with Anonymous, Username/Password, and X.509 client certificate authentication.
 
 ---
 

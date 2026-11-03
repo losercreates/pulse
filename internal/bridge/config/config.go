@@ -27,6 +27,48 @@ type EdgeBridgeConfig struct {
 	BatchMaxRecords int                   `json:"batch_max_records" yaml:"batch_max_records"`
 	MQTTAdapters    []MQTTAdapterConfig   `json:"mqtt" yaml:"mqtt"`
 	ModbusAdapters  []ModbusAdapterConfig `json:"modbus" yaml:"modbus"`
+	OPCUAAdapters   []OPCUAAdapterConfig  `json:"opcua" yaml:"opcua"`
+}
+
+// OPCUAAdapterConfig defines connection, security, and subscription parameters for an OPC-UA server.
+type OPCUAAdapterConfig struct {
+	Name              string                `json:"name" yaml:"name"`
+	Endpoint          string                `json:"endpoint" yaml:"endpoint"`
+	SecurityPolicy    string                `json:"security_policy" yaml:"security_policy"` // None | Basic256Sha256
+	SecurityMode      string                `json:"security_mode" yaml:"security_mode"`     // None | Sign | SignAndEncrypt
+	AuthMode          string                `json:"auth_mode" yaml:"auth_mode"`             // anonymous | username | certificate
+	Username          string                `json:"username,omitempty" yaml:"username,omitempty"`
+	Password          string                `json:"password,omitempty" yaml:"password,omitempty"`
+	CertFile          string                `json:"cert_file,omitempty" yaml:"cert_file,omitempty"`
+	KeyFile           string                `json:"key_file,omitempty" yaml:"key_file,omitempty"`
+	PublishInterval   time.Duration         `json:"publish_interval" yaml:"publish_interval"`
+	KeepAliveInterval time.Duration         `json:"keep_alive_interval" yaml:"keep_alive_interval"`
+	ConnectTimeout    time.Duration         `json:"connect_timeout" yaml:"connect_timeout"`
+	RequestTimeout    time.Duration         `json:"request_timeout" yaml:"request_timeout"`
+	Nodes             []MonitoredItemConfig `json:"nodes" yaml:"nodes"`
+	Discovery         DiscoveryConfig       `json:"discovery" yaml:"discovery"`
+}
+
+// MonitoredItemConfig defines an individual OPC-UA variable node subscription.
+type MonitoredItemConfig struct {
+	NodeID           string        `json:"node_id" yaml:"node_id"`
+	DeviceID         string        `json:"device_id" yaml:"device_id"`
+	MetricName       string        `json:"metric_name" yaml:"metric_name"`
+	SamplingInterval time.Duration `json:"sampling_interval" yaml:"sampling_interval"`
+	QueueSize        uint32        `json:"queue_size" yaml:"queue_size"`
+	DiscardOldest    bool          `json:"discard_oldest" yaml:"discard_oldest"`
+	DeadbandType     string        `json:"deadband_type" yaml:"deadband_type"` // None | Absolute | Percent
+	DeadbandValue    float64       `json:"deadband_value" yaml:"deadband_value"`
+}
+
+// DiscoveryConfig defines dynamic address space browsing rules.
+type DiscoveryConfig struct {
+	Enabled         bool   `json:"enabled" yaml:"enabled"`
+	RootNodeID      string `json:"root_node_id" yaml:"root_node_id"`
+	PathFilter      string `json:"path_filter" yaml:"path_filter"`
+	MaxDepth        int    `json:"max_depth" yaml:"max_depth"`
+	AutoSubscribe   bool   `json:"auto_subscribe" yaml:"auto_subscribe"`
+	DefaultDeviceID string `json:"default_device_id" yaml:"default_device_id"`
 }
 
 // MQTTAdapterConfig defines MQTT broker connection and topic translation mappings.
