@@ -44,6 +44,7 @@ func (s SessionState) String() string {
 // Channel manages the low-level TCP connection, SecureChannel, and Session state machine.
 type Channel struct {
 	cfg       config.OPCUAAdapterConfig
+	connMu    sync.RWMutex
 	conn      net.Conn
 	mu        sync.Mutex
 	state     atomic.Int32
@@ -104,6 +105,18 @@ func (c *Channel) recordKeepAlive() {
 	c.lastKeepAlive.Store(time.Now().UnixNano())
 }
 
+func (c *Channel) getConn() net.Conn {
+	c.connMu.RLock()
+	defer c.connMu.RUnlock()
+	return c.conn
+}
+
+func (c *Channel) setConn(conn net.Conn) {
+	c.connMu.Lock()
+	defer c.connMu.Unlock()
+	c.conn = conn
+}
+
 // Connect dials the endpoint, performs HEL/ACK, OpenSecureChannel, CreateSession, and ActivateSession.
 func (c *Channel) Connect(ctx context.Context) error {
 	c.mu.Lock()
@@ -121,32 +134,36 @@ func (c *Channel) Connect(ctx context.Context) error {
 		c.state.Store(int32(StateDisconnected))
 		return fmt.Errorf("failed to dial OPC-UA endpoint %s: %w", c.cfg.Endpoint, err)
 	}
-	c.conn = conn
+	c.setConn(conn)
 
 	// 1. Hello / Acknowledge Handshake
 	if err := c.sendHello(); err != nil {
-		_ = c.conn.Close()
+		c.setConn(nil)
+		_ = conn.Close()
 		c.state.Store(int32(StateDisconnected))
 		return fmt.Errorf("hello handshake failed: %w", err)
 	}
 
 	// 2. Open Secure Channel
 	if err := c.openSecureChannel(); err != nil {
-		_ = c.conn.Close()
+		c.setConn(nil)
+		_ = conn.Close()
 		c.state.Store(int32(StateDisconnected))
 		return fmt.Errorf("open secure channel failed: %w", err)
 	}
 
 	// 3. Create Session
 	if err := c.createSession(); err != nil {
-		_ = c.conn.Close()
+		c.setConn(nil)
+		_ = conn.Close()
 		c.state.Store(int32(StateDisconnected))
 		return fmt.Errorf("create session failed: %w", err)
 	}
 
 	// 4. Activate Session
 	if err := c.activateSession(); err != nil {
-		_ = c.conn.Close()
+		c.setConn(nil)
+		_ = conn.Close()
 		c.state.Store(int32(StateDisconnected))
 		return fmt.Errorf("activate session failed: %w", err)
 	}
@@ -157,6 +174,10 @@ func (c *Channel) Connect(ctx context.Context) error {
 }
 
 func (c *Channel) sendHello() error {
+	conn := c.getConn()
+	if conn == nil {
+		return net.ErrClosed
+	}
 	hello := HelloMessage{
 		ProtocolVersion:   0,
 		ReceiveBufferSize: 65536,
@@ -165,23 +186,23 @@ func (c *Channel) sendHello() error {
 		MaxChunkCount:     5000,
 		EndpointURL:       c.cfg.Endpoint,
 	}
-	if err := hello.Encode(c.conn); err != nil {
+	if err := hello.Encode(conn); err != nil {
 		return err
 	}
 
-	h, err := ReadHeader(c.conn)
+	h, err := ReadHeader(conn)
 	if err != nil {
 		return err
 	}
 	if h.MessageType != "ACK" {
 		if h.MessageType == "ERR" {
-			em, _ := DecodeErrorMessage(c.conn)
+			em, _ := DecodeErrorMessage(conn)
 			return fmt.Errorf("server returned error: %s (%s)", em.ErrorCode, em.Reason)
 		}
 		return fmt.Errorf("unexpected handshake message type: %s", h.MessageType)
 	}
 
-	_, err = DecodeAcknowledge(c.conn)
+	_, err = DecodeAcknowledge(conn)
 	return err
 }
 
@@ -235,21 +256,26 @@ func (c *Channel) openSecureChannel() error {
 	// RequestedLifetime: 300,000 ms
 	_ = binary.Write(&body, binary.LittleEndian, uint32(300000))
 
+	conn := c.getConn()
+	if conn == nil {
+		return net.ErrClosed
+	}
+
 	// Write OPN Header + ChannelId (0) + Body
 	msgSize := uint32(8 + 4 + body.Len())
 	h := Header{MessageType: "OPN", ChunkType: 'F', MessageSize: msgSize}
-	if err := h.Encode(c.conn); err != nil {
+	if err := h.Encode(conn); err != nil {
 		return err
 	}
-	if err := binary.Write(c.conn, binary.LittleEndian, uint32(0)); err != nil {
+	if err := binary.Write(conn, binary.LittleEndian, uint32(0)); err != nil {
 		return err
 	}
-	if _, err := c.conn.Write(body.Bytes()); err != nil {
+	if _, err := conn.Write(body.Bytes()); err != nil {
 		return err
 	}
 
 	// Read Response
-	respHeader, err := ReadHeader(c.conn)
+	respHeader, err := ReadHeader(conn)
 	if err != nil {
 		return err
 	}
@@ -258,7 +284,7 @@ func (c *Channel) openSecureChannel() error {
 	}
 
 	payload := make([]byte, respHeader.MessageSize-8)
-	if _, err := io.ReadFull(c.conn, payload); err != nil {
+	if _, err := io.ReadFull(conn, payload); err != nil {
 		return err
 	}
 	pr := bytes.NewReader(payload)
@@ -452,6 +478,11 @@ func (c *Channel) activateSession() error {
 
 // writeMessage writes a standard MSG frame containing SecureChannelId, TokenId, SequenceHeader, and payload.
 func (c *Channel) writeMessage(payload []byte) error {
+	conn := c.getConn()
+	if conn == nil {
+		return net.ErrClosed
+	}
+
 	var frame bytes.Buffer
 
 	// SecureChannelId (uint32), TokenId (uint32)
@@ -469,32 +500,37 @@ func (c *Channel) writeMessage(payload []byte) error {
 	msgSize := uint32(8 + frame.Len())
 	h := Header{MessageType: "MSG", ChunkType: 'F', MessageSize: msgSize}
 
-	if err := h.Encode(c.conn); err != nil {
+	if err := h.Encode(conn); err != nil {
 		return err
 	}
-	_, err := c.conn.Write(frame.Bytes())
+	_, err := conn.Write(frame.Bytes())
 	return err
 }
 
 // readMessage reads a single MSG frame and returns the inner service payload.
 func (c *Channel) readMessage() ([]byte, error) {
-	if c.conn != nil && c.cfg.KeepAliveInterval > 0 {
-		_ = c.conn.SetReadDeadline(time.Now().Add(c.cfg.KeepAliveInterval * 3))
+	conn := c.getConn()
+	if conn == nil {
+		return nil, net.ErrClosed
 	}
-	h, err := ReadHeader(c.conn)
+
+	if c.cfg.KeepAliveInterval > 0 {
+		_ = conn.SetReadDeadline(time.Now().Add(c.cfg.KeepAliveInterval * 3))
+	}
+	h, err := ReadHeader(conn)
 	if err != nil {
 		return nil, err
 	}
 	if h.MessageType != "MSG" {
 		if h.MessageType == "ERR" {
-			em, _ := DecodeErrorMessage(c.conn)
+			em, _ := DecodeErrorMessage(conn)
 			return nil, fmt.Errorf("server error: %s (%s)", em.ErrorCode, em.Reason)
 		}
 		return nil, fmt.Errorf("expected MSG frame, got %s", h.MessageType)
 	}
 
 	buf := make([]byte, h.MessageSize-8)
-	if _, err := io.ReadFull(c.conn, buf); err != nil {
+	if _, err := io.ReadFull(conn, buf); err != nil {
 		return nil, err
 	}
 
@@ -513,10 +549,13 @@ func (c *Channel) Close() error {
 	defer c.mu.Unlock()
 
 	c.state.Store(int32(StateDisconnected))
-	if c.conn != nil {
-		err := c.conn.Close()
-		c.conn = nil
-		return err
+	c.connMu.Lock()
+	conn := c.conn
+	c.conn = nil
+	c.connMu.Unlock()
+
+	if conn != nil {
+		return conn.Close()
 	}
 	return nil
 }

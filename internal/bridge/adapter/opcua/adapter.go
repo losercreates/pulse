@@ -183,7 +183,10 @@ func (a *Adapter) runLifecycle(ctx context.Context, out chan<- *telemetryv1.Tele
 		trackedChan := make(chan *telemetryv1.TelemetryReading, 100)
 		doneCh := make(chan error, 1)
 
+		var subWg sync.WaitGroup
+		subWg.Add(1)
 		go func() {
+			defer subWg.Done()
 			doneCh <- PublishLoop(ctx, a.channel, a.sm, trackedChan, a.metrics, a.cfg.Name)
 		}()
 
@@ -195,7 +198,7 @@ func (a *Adapter) runLifecycle(ctx context.Context, out chan<- *telemetryv1.Tele
 				select {
 				case out <- r:
 				case <-ctx.Done():
-					return
+					looping = false
 				}
 			case err := <-doneCh:
 				if err != nil && ctx.Err() == nil {
@@ -203,12 +206,13 @@ func (a *Adapter) runLifecycle(ctx context.Context, out chan<- *telemetryv1.Tele
 				}
 				looping = false
 			case <-ctx.Done():
-				return
+				looping = false
 			}
 		}
 
-		// Cleanup before reconnecting
+		// Cleanup before reconnecting or exiting
 		_ = a.channel.Close()
+		subWg.Wait()
 		if a.metrics != nil {
 			a.metrics.OPCUAConnectionState.WithLabelValues(a.cfg.Name).Set(0)
 			a.metrics.OPCUASubscriptions.WithLabelValues(a.cfg.Name).Set(0)
