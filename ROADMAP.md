@@ -18,10 +18,7 @@ This document tracks the architectural progression, completed milestones, and fo
 | **v0.8.0** | **008: ChronoDB Storage Durability** | Embedded LSM engine, WAL durability, SSTables & StatefulSets | **Completed** |
 | **v0.9.0** | **009: Security & Access Control** | mTLS, device anti-spoofing, ChronoDB JWT RBAC & HMAC webhooks | **Completed** |
 | **v1.0.0** | **010: Edge Bridge & CEP Engine** | MQTT/Sparkplug/Modbus bridge, disk spooler & partition-local CEP | **Completed** |
-| **v1.1.0** | **011: ChronoDB Raft Replication** | Multi-node consensus, quorum writes & automated shard failover | *Planned* |
-| **v1.2.0** | **012: Native OPC-UA Subscriptions** | Direct binary OPC-UA monitored items & dynamic node discovery | *Planned* |
-| **v1.3.0** | **013: WebAssembly (Wasm) UDFs** | Sandboxed edge/stream transformation filters using pure Go Wasm | *Planned* |
-| **v1.4.0** | **014: OpenTelemetry Tracing** | W3C tracecontext propagation & end-to-end telemetry latency spans | *Planned* |
+| **v1.1.0** | **011: Native OPC-UA Fieldbus Adapter** | Direct binary OPC-UA monitored items & dynamic node discovery | *Planned* |
 
 ---
 
@@ -101,22 +98,19 @@ This document tracks the architectural progression, completed milestones, and fo
 
 ## Future Horizon & Upcoming Milestones
 
-### Milestone 011: ChronoDB Raft Multi-Node Consensus (v1.1.0)
-- **Distributed Consensus**: Integrate pure Go Raft consensus across ChronoDB storage nodes.
-- **Quorum Replication**: Replicate WAL operations across a minimum 3-node cluster with configurable read/write quorums.
-- **Automated Leader Election & Shard Rebalancing**: Automatic shard master failover upon node loss with dynamic partition rebalancing.
-
-### Milestone 012: Native OPC-UA Binary Fieldbus Adapter (v1.2.0)
+### Milestone 011: Native OPC-UA Binary Fieldbus Adapter (v1.1.0)
 - **Direct OPC-UA Driver**: Pure Go binary protocol implementation for OPC-UA in `pulse-bridge`.
 - **Monitored Items & Subscriptions**: Real-time publish/subscribe monitored items replacing cyclic polling loops.
 - **Dynamic Node Discovery**: Automatic PLC address space traversal and variable browsal.
+- **Store-and-Forward Spooling Integration**: Seamless handoff of OPC-UA telemetry into the existing disk-backed FIFO spooler during edge WAN disconnects.
 
-### Milestone 013: WebAssembly (Wasm) Edge & Stream UDFs (v1.3.0)
-- **Sandboxed Execution**: Embed pure Go WebAssembly runtime (e.g. `wazero`) into `pulse-processor` and `pulse-bridge`.
-- **Custom User-Defined Functions**: Allow engineers to upload custom signal calibration routines, math formulas, and filtering logic compiled from Rust, Go, or C.
-- **Zero-Downtime Hot Swapping**: Dynamic UDF deployment and memory-bounded execution limits.
+---
 
-### Milestone 014: OpenTelemetry (OTel) Distributed Tracing (v1.4.0)
-- **End-to-End Tracing**: Inject and propagate W3C TraceContext headers starting from the edge bridge, through the gateway, broker, stream processor, and ChronoDB storage sink.
-- **Continuous Latency Attribution**: Isolate per-hop transport and processing latencies with native OTLP span exports to Jaeger, Tempo, and OpenTelemetry Collectors.
+## Architectural Decisions & Retired Tracks
+
+Following the platform production readiness assessment, the following previously contemplated enhancements were evaluated and intentionally retired to preserve Pulse's zero-overhead, air-gapped, and low-complexity operational footprint:
+
+- **ChronoDB Raft Consensus**: Retired. Storage durability and crash recovery are already guaranteed by Redpanda's replicated broker log combined with ChronoDB's embedded LSM engine, synchronous WAL `fsync`, and Kubernetes `StatefulSet` PVC re-attachment. Adding application-level Raft consensus introduces unnecessary distributed state machine complexity, split-brain failure modes, and write latency.
+- **WebAssembly (Wasm) UDFs**: Retired. Milestone 010 delivered a partition-local CEP engine with multivariate AST arithmetic expressions (`power_mw / fuel_flow < 0.70`), temporal sequencing, and live rule reloads via REST and `SIGHUP`. Embedding a Wasm runtime introduces memory overhead, JIT pauses, and operational complexity in air-gapped industrial facilities.
+- **OpenTelemetry Distributed Tracing**: Retired. In high-throughput industrial streaming ($50\text{k} - 10\text{M}$ events/s), per-event distributed tracing induces unsustainable data amplification. End-to-end latency and health observability are already delivered via synthetic canary probes and hop-by-hop Prometheus metrics.
 
