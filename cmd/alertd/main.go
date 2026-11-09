@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// 2. Setup Sinks
-	primarySink := sink.NewWebhookSink(cfg.WebhookURL, nil)
+	primarySink := sink.NewWebhookSink(cfg.WebhookURL, nil).WithAllowPrivateNetworks(cfg.WebhookAllowPrivateNetworks)
 	if cfg.WebhookHMACSecret != "" {
 		primarySink.WithSigner(auth.NewWebhookSigner([]byte(cfg.WebhookHMACSecret)))
 		log.Println("Alert Dispatcher HMAC-SHA256 outbound signing enabled.")

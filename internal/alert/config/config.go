@@ -29,6 +29,9 @@ type Config struct {
 	// Milestone 009: Webhook HMAC Cryptographic Signing
 	WebhookHMACSecret     string
 	WebhookHMACSecretFile string
+
+	// Webhook Egress Security
+	WebhookAllowPrivateNetworks bool
 }
 
 // Load loads configuration from environment variables with safe defaults.
@@ -72,7 +75,18 @@ func Load() *Config {
 
 		WebhookHMACSecret:     hmacSecret,
 		WebhookHMACSecretFile: hmacSecretFile,
+
+		WebhookAllowPrivateNetworks: getBoolEnv("ALERT_WEBHOOK_ALLOW_PRIVATE_NETWORKS", false),
 	}
+}
+
+func getBoolEnv(key string, defaultVal bool) bool {
+	if val, ok := os.LookupEnv(key); ok && val != "" {
+		if b, err := strconv.ParseBool(val); err == nil {
+			return b
+		}
+	}
+	return defaultVal
 }
 
 func getEnv(key, defaultVal string) string {

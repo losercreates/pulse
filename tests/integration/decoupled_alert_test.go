@@ -65,7 +65,7 @@ func TestDecoupledAlerting_SlowWebhookZeroStreamLag(t *testing.T) {
 		CircuitBreakerCoolOff:   30 * time.Second,
 	}
 
-	primarySink := sink.NewWebhookSink(slowServer.URL, slowServer.Client())
+	primarySink := sink.NewWebhookSink(slowServer.URL, slowServer.Client()).WithAllowPrivateNetworks(true)
 	deadLetter := sink.NewDeadLetterSink(nil, "telemetry.alerts.deadletter")
 	alertDisp := dispatcher.NewAlertDispatcher(cfg, nil, primarySink, deadLetter, nil)
 

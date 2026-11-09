@@ -27,16 +27,29 @@ func (h Header) Encode(w io.Writer) error {
 	return err
 }
 
-// ReadHeader reads the 8-byte header from r.
+// OPC-UA Message framing constants.
+const (
+	MinMessageSize = 8
+	MaxMessageSize = 16777216 // 16 MB maximum message size
+)
+
+// ReadHeader reads the 8-byte header from r and validates message size bounds.
 func ReadHeader(r io.Reader) (Header, error) {
 	buf := make([]byte, 8)
 	if _, err := io.ReadFull(r, buf); err != nil {
 		return Header{}, err
 	}
+	msgSize := binary.LittleEndian.Uint32(buf[4:8])
+	if msgSize < MinMessageSize {
+		return Header{}, fmt.Errorf("invalid opc-ua message size %d (minimum %d bytes)", msgSize, MinMessageSize)
+	}
+	if msgSize > MaxMessageSize {
+		return Header{}, fmt.Errorf("opc-ua message size %d exceeds maximum limit (%d bytes)", msgSize, MaxMessageSize)
+	}
 	return Header{
 		MessageType: string(buf[0:3]),
 		ChunkType:   buf[3],
-		MessageSize: binary.LittleEndian.Uint32(buf[4:8]),
+		MessageSize: msgSize,
 	}, nil
 }
 

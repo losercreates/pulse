@@ -41,7 +41,7 @@ func TestWebhookSinkHMACSecurity(t *testing.T) {
 	}))
 	defer server.Close()
 
-	webhookSink := sink.NewWebhookSink(server.URL, nil).WithSigner(signer)
+	webhookSink := sink.NewWebhookSink(server.URL, nil).WithSigner(signer).WithAllowPrivateNetworks(true)
 
 	alert := &telemetryv1.AlertEvent{
 		AlertId:           "alert-001",
@@ -133,5 +133,22 @@ func TestWebhookSinkHMACSecurity(t *testing.T) {
 		recNoHeaders := httptest.NewRecorder()
 		handler.ServeHTTP(recNoHeaders, reqNoHeaders)
 		assert.Equal(t, http.StatusUnauthorized, recNoHeaders.Code)
+	})
+
+	t.Run("SSRF: Rejects restricted loopback, private CIDRs, and metadata IP", func(t *testing.T) {
+		restrictedTargets := []string{
+			"http://127.0.0.1:8080/hook",
+			"http://localhost:8080/hook",
+			"http://169.254.169.254/latest/meta-data/",
+			"http://10.0.0.5/internal",
+			"http://192.168.1.1/admin",
+			"ftp://example.com/alert",
+		}
+
+		for _, target := range restrictedTargets {
+			s := sink.NewWebhookSink(target, nil)
+			err := s.Deliver(context.Background(), alert)
+			require.Error(t, err, "expected error for restricted target %s", target)
+		}
 	})
 }

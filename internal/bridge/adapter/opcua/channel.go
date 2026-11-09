@@ -282,6 +282,9 @@ func (c *Channel) openSecureChannel() error {
 	if respHeader.MessageType != "OPN" {
 		return fmt.Errorf("expected OPN response, got %s", respHeader.MessageType)
 	}
+	if respHeader.MessageSize < MinMessageSize || respHeader.MessageSize > MaxMessageSize {
+		return fmt.Errorf("invalid secure channel response size: %d", respHeader.MessageSize)
+	}
 
 	payload := make([]byte, respHeader.MessageSize-8)
 	if _, err := io.ReadFull(conn, payload); err != nil {
@@ -527,6 +530,9 @@ func (c *Channel) readMessage() ([]byte, error) {
 			return nil, fmt.Errorf("server error: %s (%s)", em.ErrorCode, em.Reason)
 		}
 		return nil, fmt.Errorf("expected MSG frame, got %s", h.MessageType)
+	}
+	if h.MessageSize < MinMessageSize || h.MessageSize > MaxMessageSize {
+		return nil, fmt.Errorf("invalid opc-ua message size: %d", h.MessageSize)
 	}
 
 	buf := make([]byte, h.MessageSize-8)
